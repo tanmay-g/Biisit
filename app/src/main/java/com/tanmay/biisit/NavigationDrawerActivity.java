@@ -96,6 +96,10 @@ public class NavigationDrawerActivity extends AppCompatActivity
 
         DrawerLayout drawer = (DrawerLayout) findViewById(R.id.drawer_layout);
         drawer.closeDrawer(GravityCompat.START);
+        item.setChecked(true);
+        setTitle(item.getTitle());
+//        getSupportFragmentManager().beginTransaction().replace(R.id.content_navigation_drawer, new Fragment()).commit();
+
         return true;
     }
 }
