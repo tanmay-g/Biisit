@@ -9,5 +9,7 @@
     android:layout_height="match_parent"
     app:layoutManager="LinearLayoutManager"
     tools:context="com.tanmay.biisit.myMusic.MyMusicFragment"
-    tools:listitem="@layout/fragment_mymusic_item"/>
+    tools:listitem="@layout/fragment_mymusic_item"
+    />
+    <!--android:background="@color/colorAccent"-->
 

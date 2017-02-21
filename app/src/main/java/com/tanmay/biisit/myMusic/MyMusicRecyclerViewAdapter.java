@@ -7,6 +7,7 @@ import android.util.Log;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
+import android.widget.ImageView;
 import android.widget.TextView;
 
 import com.tanmay.biisit.R;
@@ -29,6 +30,8 @@ public class MyMusicRecyclerViewAdapter extends RecyclerView.Adapter<MyMusicRecy
     private final int mIdColumn;
     private final int mArtistColumn;
     private final OnListFragmentInteractionListener mListener;
+    private int mSelectedPosition = -1;
+    private View mSelectedView;
 
 //    public MyMusicRecyclerViewAdapter(List<DummyItem> items) {
 //        mValues = items;
@@ -69,20 +72,29 @@ public class MyMusicRecyclerViewAdapter extends RecyclerView.Adapter<MyMusicRecy
         holder.mIdView.setText(
                 String.valueOf((int) mValues.getLong(mIdColumn))
         );
-        holder.mContentView.setText(
+        holder.mTitleView.setText(
                 mValues.getString(mTitleColumn)
         );
+        holder.mArtistView.setText(
+                mValues.getString(mArtistColumn)
+        );
 
-        holder.mView.setOnClickListener(new View.OnClickListener() {
-            @Override
-            public void onClick(View v) {
-                if (null != mListener) {
-                    // Notify the active callbacks interface (the activity, if the
-                    // fragment is attached to one) that an item has been selected.
-
-                }
-            }
-        });
+        if (position == mSelectedPosition){
+            holder.mView.setSelected(true);
+            mSelectedView = holder.mView;
+        }
+        else
+            holder.mView.setSelected(false);
+//        holder.mView.setOnClickListener(new View.OnClickListener() {
+//            @Override
+//            public void onClick(View v) {
+//                if (null != mListener) {
+//                    // Notify the active callbacks interface (the activity, if the
+//                    // fragment is attached to one) that an item has been selected.
+//
+//                }
+//            }
+//        });
     }
 
     @Override
@@ -93,20 +105,24 @@ public class MyMusicRecyclerViewAdapter extends RecyclerView.Adapter<MyMusicRecy
     public class ViewHolder extends RecyclerView.ViewHolder implements View.OnClickListener {
         public final View mView;
         public final TextView mIdView;
-        public final TextView mContentView;
+        public final TextView mTitleView;
+        public final TextView mArtistView;
+        public final ImageView mButton;
 //        public DummyItem mItem;
 
         public ViewHolder(View view) {
             super(view);
             mView = view;
-            mIdView = (TextView) view.findViewById(R.id.id);
-            mContentView = (TextView) view.findViewById(R.id.content);
-            mContentView.setOnClickListener(this);
+            mIdView = (TextView) view.findViewById(R.id.music_id);
+            mTitleView = (TextView) view.findViewById(R.id.music_title);
+            mArtistView = (TextView) view.findViewById(R.id.music_artist);
+            mButton = (ImageView) view.findViewById(R.id.button);
+            mView.setOnClickListener(this);
         }
 
         @Override
         public String toString() {
-            return super.toString() + " '" + mContentView.getText() + "'";
+            return super.toString() + " '" + mTitleView.getText() + "'";
         }
 
         @Override
@@ -114,7 +130,30 @@ public class MyMusicRecyclerViewAdapter extends RecyclerView.Adapter<MyMusicRecy
             int adapterPosition = getAdapterPosition();
             mValues.moveToPosition(adapterPosition);
             Log.i(LOG_TAG, "onClick: position " + adapterPosition);
-            mListener.onListFragmentInteraction(mValues.getString(mTitleColumn));
+            boolean isRunning = mView.isSelected();
+            if (mSelectedView != null)
+                ((ImageView)mSelectedView.findViewById(R.id.button)).setImageResource(R.drawable.ic_play);
+//                ((ImageView)mSelectedView.findViewById(R.id.button)).setBackground(ContextCompat.getDrawable(mContext, R.drawable.ic_play));
+            if (!isRunning){
+                if (mSelectedView != null) {
+                    mSelectedView.setSelected(false);
+                }
+                mSelectedPosition = adapterPosition;
+                mSelectedView = mView;
+            }
+            else {
+                mSelectedPosition = -1;
+                mSelectedView = null;
+            }
+            mView.setSelected(!isRunning);
+            mButton.setImageResource(
+                    !isRunning ? R.drawable.ic_pause : R.drawable.ic_play
+            );
+//            mButton.setBackground(
+//                    ContextCompat.getDrawable(mContext, !isRunning ? R.drawable.ic_pause : R.drawable.ic_play)
+//            );
+            mListener.onListFragmentInteraction(mValues.getString(mTitleColumn), !isRunning);
+
         }
     }
 }

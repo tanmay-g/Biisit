@@ -1,37 +1,64 @@
 <?xml version="1.0" encoding="utf-8"?>
-<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
-              xmlns:tools="http://schemas.android.com/tools"
-              android:layout_width="match_parent"
+<LinearLayout
+    xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    xmlns:tools="http://schemas.android.com/tools"
+    android:layout_width="match_parent"
     android:layout_height="wrap_content"
     android:orientation="horizontal"
     android:paddingLeft="16dp"
     android:paddingRight="16dp"
-              android:gravity="center_vertical">
+    android:gravity="center_vertical"
+    android:clickable="true"
+    android:background="@drawable/list_item_selector">
 
-    <Button
+    <ImageView
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
         android:id="@+id/button"
-        android:background="@android:drawable/ic_media_play"
-        />
+        android:clickable="false"
+        app:srcCompat="@drawable/ic_play"
+        android:src="@drawable/ic_play"/>
 
     <TextView
-        android:id="@+id/id"
+        android:id="@+id/music_id"
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
         android:layout_margin="@dimen/text_margin"
         android:textAppearance="?attr/textAppearanceListItem"
         android:layout_weight="0"
         tools:text="1"
+        android:clickable="false"
         />
 
-    <TextView
-        android:id="@+id/content"
+    <LinearLayout
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
-        android:layout_margin="@dimen/text_margin"
-        android:textAppearance="?attr/textAppearanceListItem"
+
         android:layout_weight="1"
-        tools:text="Item 1"/>
+        android:clickable="false"
+        android:orientation="vertical">
+
+        <TextView
+            android:id="@+id/music_title"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="@dimen/text_margin_small"
+            android:layout_marginStart="@dimen/text_margin"
+            android:textAppearance="?attr/textAppearanceListItem"
+
+            tools:text="Item 1"/>
+
+        <TextView
+            android:id="@+id/music_artist"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_marginStart="@dimen/text_margin"
+            android:layout_marginBottom="@dimen/text_margin_small"
+            android:textAppearance="@style/TextAppearance.AppCompat.Small"
+            tools:text="Name 1"/>
+
+    </LinearLayout>
+
 
 </LinearLayout>

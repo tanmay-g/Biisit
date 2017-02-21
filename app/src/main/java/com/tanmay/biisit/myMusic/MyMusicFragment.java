@@ -54,16 +54,17 @@ public class MyMusicFragment extends Fragment implements LoaderManager.LoaderCal
     @Override
     public void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
-        getActivity().getSupportLoaderManager().initLoader(CURSOR_LOADER_ID, null, this);
 
 //        if (getArguments() != null) {
 //            mColumnCount = getArguments().getInt(ARG_COLUMN_COUNT);
 //        }
+
     }
 
     @Override
     public View onCreateView(LayoutInflater inflater, ViewGroup container,
                              Bundle savedInstanceState) {
+        Log.i(LOG_TAG, "onCreateView: Starting");
         View view = inflater.inflate(R.layout.fragment_mymusic_list, container, false);
 
         // Set the adapter
@@ -77,7 +78,7 @@ public class MyMusicFragment extends Fragment implements LoaderManager.LoaderCal
             }
             mRecyclerView.setAdapter(new MyMusicRecyclerViewAdapter(getActivity(), this, null));
         }
-
+        getActivity().getSupportLoaderManager().initLoader(CURSOR_LOADER_ID, null, this);
         return view;
     }
 
@@ -120,9 +121,9 @@ public class MyMusicFragment extends Fragment implements LoaderManager.LoaderCal
     }
 
     @Override
-    public void onListFragmentInteraction(String s) {
-        Toast.makeText(getActivity(), s + " got clicked", Toast.LENGTH_SHORT).show();
-
+    public void onListFragmentInteraction(String songName, boolean toStart) {
+        String action = toStart? "Start" : "Stop";
+        Toast.makeText(getActivity(), songName + " is to be " + action + "ed", Toast.LENGTH_SHORT).show();
     }
 
 

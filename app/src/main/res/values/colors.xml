@@ -3,4 +3,10 @@
     <color name="colorPrimary">#ff9800</color>
     <color name="colorPrimaryDark">#f57c00</color>
     <color name="colorAccent">#00b0ff</color>
+    <color name="selected_color">#eeeeee</color>
+    <color name="pressed_color">#e0e0e0</color>
+    <color name="focused_color">#f5f5f5</color>
+    <color name="white">#ffffff</color>
+    <color name="activated">#eceff1</color>
+    <color name="black">#000000</color>
 </resources>

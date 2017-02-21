@@ -1,0 +1,16 @@
+<?xml version="1.0" encoding="utf-8"?>
+<ripple
+    xmlns:android="http://schemas.android.com/apk/res/android"
+    android:color="@color/pressed_color">
+<!--android:color="@color/pressed_color">-->
+
+
+
+    <item>
+        <selector xmlns:android="http://schemas.android.com/apk/res/android">
+            <item android:drawable="@color/pressed_color" android:state_pressed="true"/>
+            <item android:drawable="@color/selected_color" android:state_selected="true"/>
+            <item android:drawable="@color/focused_color" android:state_focused="true"/>
+        </selector>
+    </item>
+</ripple>
