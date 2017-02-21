@@ -115,21 +115,13 @@ public class NavigationDrawerActivity extends AppCompatActivity
         // Handle navigation view item clicks here.
         int id = item.getItemId();
 
-        if (id == R.id.nav_camera) {
+        if (id == R.id.my_music) {
             // Handle the camera action
             getSupportFragmentManager().beginTransaction().replace(R.id.content_navigation_drawer, new MyMusicFragment()).commit();
-        } else if (id == R.id.nav_gallery) {
-            getSupportFragmentManager().beginTransaction().replace(R.id.content_navigation_drawer, new MyMusicFragment()).commit();
-
-        } else if (id == R.id.nav_slideshow) {
-            getSupportFragmentManager().beginTransaction().replace(R.id.content_navigation_drawer, new Fragment()).commit();
-        } else if (id == R.id.nav_manage) {
+        } else if (id == R.id.soundcloud) {
             getSupportFragmentManager().beginTransaction().replace(R.id.content_navigation_drawer, new Fragment()).commit();
 
-        } else if (id == R.id.nav_share) {
-            getSupportFragmentManager().beginTransaction().replace(R.id.content_navigation_drawer, new Fragment()).commit();
-
-        } else if (id == R.id.nav_send) {
+        } else if (id == R.id.sign_in_out) {
             getSupportFragmentManager().beginTransaction().replace(R.id.content_navigation_drawer, new Fragment()).commit();
 
         }
