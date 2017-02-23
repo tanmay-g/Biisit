@@ -7,9 +7,13 @@ import android.support.v4.app.Fragment;
 import android.support.v4.app.LoaderManager;
 import android.support.v4.content.CursorLoader;
 import android.support.v4.content.Loader;
+import android.support.v4.widget.DrawerLayout;
+import android.support.v7.app.ActionBarDrawerToggle;
+import android.support.v7.app.AppCompatActivity;
 import android.support.v7.widget.GridLayoutManager;
 import android.support.v7.widget.LinearLayoutManager;
 import android.support.v7.widget.RecyclerView;
+import android.support.v7.widget.Toolbar;
 import android.util.Log;
 import android.view.LayoutInflater;
 import android.view.View;
@@ -65,7 +69,7 @@ public class MyMusicFragment extends Fragment implements LoaderManager.LoaderCal
     public View onCreateView(LayoutInflater inflater, ViewGroup container,
                              Bundle savedInstanceState) {
         Log.i(LOG_TAG, "onCreateView: Starting");
-        View view = inflater.inflate(R.layout.fragment_mymusic_list, container, false);
+        View view = inflater.inflate(R.layout.fragment_mymusic, container, false);
 
         // Set the adapter
         mRecyclerView = (RecyclerView) view.findViewById(R.id.recyclerView);
@@ -78,6 +82,15 @@ public class MyMusicFragment extends Fragment implements LoaderManager.LoaderCal
             }
             mRecyclerView.setAdapter(new MyMusicRecyclerViewAdapter(getActivity(), this, null));
         }
+
+        Toolbar toolbar = (Toolbar) view.findViewById(R.id.toolbar);
+        ((AppCompatActivity) getActivity()).setSupportActionBar(toolbar);
+        DrawerLayout drawer = (DrawerLayout) getActivity().findViewById(R.id.drawer_layout);
+        ActionBarDrawerToggle toggle = new ActionBarDrawerToggle(
+                getActivity(), drawer, toolbar, R.string.navigation_drawer_open, R.string.navigation_drawer_close);
+        drawer.setDrawerListener(toggle);
+        toggle.syncState();
+
         getActivity().getSupportLoaderManager().initLoader(CURSOR_LOADER_ID, null, this);
         return view;
     }

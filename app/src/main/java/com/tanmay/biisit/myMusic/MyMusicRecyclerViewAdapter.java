@@ -61,7 +61,7 @@ public class MyMusicRecyclerViewAdapter extends RecyclerView.Adapter<MyMusicRecy
     @Override
     public ViewHolder onCreateViewHolder(ViewGroup parent, int viewType) {
         View view = LayoutInflater.from(parent.getContext())
-                .inflate(R.layout.fragment_mymusic_item, parent, false);
+                .inflate(R.layout.fragment_mymusic_list_item, parent, false);
         return new ViewHolder(view);
     }
 
