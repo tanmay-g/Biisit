@@ -1,5 +1,7 @@
 package com.tanmay.biisit.myMusic.interfaces;
 
+import android.net.Uri;
+
 /**
  * This interface must be implemented by activities that contain this
  * fragment to allow an interaction in this fragment to be communicated
@@ -12,5 +14,5 @@ package com.tanmay.biisit.myMusic.interfaces;
  */
 public interface OnListFragmentInteractionListener {
     // TODO: Update argument type and name
-    void onListFragmentInteraction(String s, boolean b);
+    void onListFragmentInteraction(Uri mediaUriToPlay, boolean start);
 }

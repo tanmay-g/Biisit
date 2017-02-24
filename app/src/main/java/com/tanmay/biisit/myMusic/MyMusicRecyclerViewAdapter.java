@@ -1,7 +1,10 @@
 package com.tanmay.biisit.myMusic;
 
+import android.content.ContentUris;
 import android.content.Context;
 import android.database.Cursor;
+import android.net.Uri;
+import android.provider.MediaStore;
 import android.support.v7.widget.RecyclerView;
 import android.util.Log;
 import android.view.LayoutInflater;
@@ -11,15 +14,13 @@ import android.widget.ImageView;
 import android.widget.TextView;
 
 import com.tanmay.biisit.R;
-import com.tanmay.biisit.dummy.DummyContent.DummyItem;
 import com.tanmay.biisit.myMusic.interfaces.OnListFragmentInteractionListener;
 
 //import com.tanmay.biisit.myMusic.MyMusicFragment.OnListFragmentInteractionListener;
 
 /**
- * {@link RecyclerView.Adapter} that can display a {@link DummyItem} and makes a call to the
- * specified {link OnListFragmentInteractionListener}.
- * TODO: Replace the implementation with code for your data type.
+ * {@link RecyclerView.Adapter} that can display a song from a cursor and makes a call to the
+ * specified {@link OnListFragmentInteractionListener}.
  */
 public class MyMusicRecyclerViewAdapter extends RecyclerView.Adapter<MyMusicRecyclerViewAdapter.ViewHolder> {
 
@@ -33,11 +34,6 @@ public class MyMusicRecyclerViewAdapter extends RecyclerView.Adapter<MyMusicRecy
     private int mSelectedPosition = -1;
     private View mSelectedView;
 
-//    public MyMusicRecyclerViewAdapter(List<DummyItem> items) {
-//        mValues = items;
-////        mListener = listener;
-//    }
-
     public MyMusicRecyclerViewAdapter(Context context, OnListFragmentInteractionListener listener, Cursor data) {
         mContext = context;
         mValues = data;
@@ -45,11 +41,11 @@ public class MyMusicRecyclerViewAdapter extends RecyclerView.Adapter<MyMusicRecy
 
         if (mValues != null && mValues.moveToFirst()) {
             mTitleColumn = mValues.getColumnIndex
-                    (android.provider.MediaStore.Audio.Media.TITLE);
+                    (MediaStore.Audio.Media.TITLE);
             mIdColumn = mValues.getColumnIndex
-                    (android.provider.MediaStore.Audio.Media._ID);
+                    (MediaStore.Audio.Media._ID);
             mArtistColumn = mValues.getColumnIndex
-                    (android.provider.MediaStore.Audio.Media.ARTIST);
+                    (MediaStore.Audio.Media.ARTIST);
         }
         else  {
             mTitleColumn = 0;
@@ -85,16 +81,6 @@ public class MyMusicRecyclerViewAdapter extends RecyclerView.Adapter<MyMusicRecy
         }
         else
             holder.mView.setSelected(false);
-//        holder.mView.setOnClickListener(new View.OnClickListener() {
-//            @Override
-//            public void onClick(View v) {
-//                if (null != mListener) {
-//                    // Notify the active callbacks interface (the activity, if the
-//                    // fragment is attached to one) that an item has been selected.
-//
-//                }
-//            }
-//        });
     }
 
     @Override
@@ -108,7 +94,6 @@ public class MyMusicRecyclerViewAdapter extends RecyclerView.Adapter<MyMusicRecy
         public final TextView mTitleView;
         public final TextView mArtistView;
         public final ImageView mButton;
-//        public DummyItem mItem;
 
         public ViewHolder(View view) {
             super(view);
@@ -149,10 +134,11 @@ public class MyMusicRecyclerViewAdapter extends RecyclerView.Adapter<MyMusicRecy
             mButton.setImageResource(
                     !isRunning ? R.drawable.ic_pause : R.drawable.ic_play
             );
-//            mButton.setBackground(
-//                    ContextCompat.getDrawable(mContext, !isRunning ? R.drawable.ic_pause : R.drawable.ic_play)
-//            );
-            mListener.onListFragmentInteraction(mValues.getString(mTitleColumn), !isRunning);
+            Uri mediaUri=
+                    ContentUris
+                            .withAppendedId(MediaStore.Audio.Media.EXTERNAL_CONTENT_URI,
+                                    mValues.getInt(mIdColumn));
+            mListener.onListFragmentInteraction(mediaUri, !isRunning);
 
         }
     }
