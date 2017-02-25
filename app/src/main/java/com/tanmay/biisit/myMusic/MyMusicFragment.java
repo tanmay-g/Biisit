@@ -72,7 +72,7 @@ public class MyMusicFragment extends Fragment implements LoaderManager.LoaderCal
             serviceBound = false;
         }
     };
-    private Uri mPrevMediaUri = null;
+    private Uri mLastPlayedUri = null;
 
 
     /**
@@ -192,13 +192,16 @@ public class MyMusicFragment extends Fragment implements LoaderManager.LoaderCal
     @Override
     public void onListFragmentInteraction(Uri mediaUri, boolean toStart) {
         if (toStart){
-            if (mediaUri.equals(mPrevMediaUri))
+            if (mediaUri.equals(mLastPlayedUri))
                 player.resumeMedia();
-            else
+            else {
+                if (player != null)
+                    player.stopMedia();
                 playAudio(mediaUri);
+            }
         }
         else {
-            mPrevMediaUri = mediaUri;
+            mLastPlayedUri = mediaUri;
             player.pauseMedia();
         }
 //        String action = toStart? "Start" : "Stop";
@@ -208,7 +211,7 @@ public class MyMusicFragment extends Fragment implements LoaderManager.LoaderCal
 
     @Override
     public void onPlaybackStopped() {
-
+        Toast.makeText(getActivity(), "Playback stopped", Toast.LENGTH_SHORT).show();
     }
 
     private void playAudio(Uri media) {
@@ -223,6 +226,13 @@ public class MyMusicFragment extends Fragment implements LoaderManager.LoaderCal
             binder.addSource(media);
             player = binder.getService();
         }
+    }
+
+    @Override
+    public void onDestroy() {
+        if (binder != null)
+            binder.removeEventListener(this);
+        super.onDestroy();
     }
 }
 

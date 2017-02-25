@@ -1,14 +1,17 @@
 package com.tanmay.biisit;
 
 import android.app.Service;
+import android.content.BroadcastReceiver;
 import android.content.Context;
 import android.content.Intent;
+import android.content.IntentFilter;
 import android.media.AudioManager;
 import android.media.MediaPlayer;
 import android.net.Uri;
 import android.os.Binder;
 import android.os.IBinder;
 import android.util.Log;
+import android.widget.Toast;
 
 import java.io.IOException;
 
@@ -33,12 +36,13 @@ public class MediaPlayerService extends Service implements MediaPlayer.OnComplet
     @Override
     public void onCreate() {
         sIsRunning = true;
+        registerBecomingNoisyReceiver();
         super.onCreate();
     }
 
     @Override
     public void onDestroy() {
-
+        Toast.makeText(this, "Service ended", Toast.LENGTH_SHORT).show();
         super.onDestroy();
         sIsRunning = false;
 
@@ -47,12 +51,20 @@ public class MediaPlayerService extends Service implements MediaPlayer.OnComplet
             mMediaPlayer.release();
         }
         removeAudioFocus();
+//        removeNotification();
+        unregisterBecomingNoisyReceiver();
 //        stopMedia();
     }
 
     @Override
     public IBinder onBind(Intent intent) {
         return mBinder;
+    }
+
+    @Override
+    public boolean onUnbind(Intent intent) {
+        Toast.makeText(this, "Service unbinding", Toast.LENGTH_SHORT).show();
+        return super.onUnbind(intent);
     }
 
     @Override
@@ -78,9 +90,11 @@ public class MediaPlayerService extends Service implements MediaPlayer.OnComplet
                 break;
             case AudioManager.AUDIOFOCUS_LOSS:
                 // Lost focus for an unbounded amount of time: stop playback and release media player
-                if (mMediaPlayer.isPlaying()) mMediaPlayer.stop();
-                mMediaPlayer.release();
-                mMediaPlayer = null;
+                stopMedia();
+                stopSelf();
+//                if (mMediaPlayer.isPlaying()) mMediaPlayer.stop();
+//                mMediaPlayer.release();
+//                mMediaPlayer = null;
                 break;
             case AudioManager.AUDIOFOCUS_LOSS_TRANSIENT:
                 // Lost focus for a short time, but we have to stop
@@ -180,8 +194,9 @@ public class MediaPlayerService extends Service implements MediaPlayer.OnComplet
         }
     }
 
-    private void stopMedia() {
-        mCurrentListener.onPlaybackStopped();
+    public void stopMedia() {
+        if (mCurrentListener != null)
+            mCurrentListener.onPlaybackStopped();
         if (mMediaPlayer == null)
             return;
         if (mMediaPlayer.isPlaying()) {
@@ -190,7 +205,8 @@ public class MediaPlayerService extends Service implements MediaPlayer.OnComplet
     }
 
     public void pauseMedia() {
-        mCurrentListener.onPlaybackStopped();
+        if (mCurrentListener != null)
+            mCurrentListener.onPlaybackStopped();
         if (mMediaPlayer.isPlaying()) {
             mMediaPlayer.pause();
             resumePosition = mMediaPlayer.getCurrentPosition();
@@ -204,6 +220,24 @@ public class MediaPlayerService extends Service implements MediaPlayer.OnComplet
         }
     }
 
+    //Becoming noisy
+    private BroadcastReceiver becomingNoisyReceiver = new BroadcastReceiver() {
+        @Override
+        public void onReceive(Context context, Intent intent) {
+            //pause audio on ACTION_AUDIO_BECOMING_NOISY
+            pauseMedia();
+//            buildNotification(PlaybackStatus.PAUSED);
+        }
+    };
+
+    private void registerBecomingNoisyReceiver() {
+        //register after getting audio focus
+        IntentFilter intentFilter = new IntentFilter(AudioManager.ACTION_AUDIO_BECOMING_NOISY);
+        registerReceiver(becomingNoisyReceiver, intentFilter);
+    }
+    private void unregisterBecomingNoisyReceiver() {
+        unregisterReceiver(becomingNoisyReceiver);
+    }
 
     public class MediaPlayerServiceBinder extends Binder implements MediaPlayerServiceUpdater {
         public MediaPlayerService getService() {
@@ -242,6 +276,12 @@ public class MediaPlayerService extends Service implements MediaPlayer.OnComplet
                 mCurrentListener.onPlaybackStopped();
             mCurrentListener = listener;
         }
+
+        @Override
+        public void removeEventListener(MediaPlayerServiceEventListener listener) {
+            if (mCurrentListener.equals(listener))
+                mCurrentListener = null;
+        }
     }
 
     public interface MediaPlayerServiceEventListener{
@@ -252,6 +292,7 @@ public class MediaPlayerService extends Service implements MediaPlayer.OnComplet
         public void addSource(Uri localMediaUri);
         public void addSource(String streamingURL);
         public void addEventListener(MediaPlayerServiceEventListener listener);
+        public void removeEventListener(MediaPlayerServiceEventListener listener);
     }
 
 }
