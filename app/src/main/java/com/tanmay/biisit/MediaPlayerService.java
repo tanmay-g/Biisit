@@ -13,15 +13,15 @@ import android.media.MediaMetadataRetriever;
 import android.media.MediaPlayer;
 import android.media.session.MediaSessionManager;
 import android.net.Uri;
-import android.os.Binder;
+import android.os.Bundle;
 import android.os.IBinder;
 import android.os.RemoteException;
+import android.support.annotation.Nullable;
 import android.support.v4.media.MediaMetadataCompat;
 import android.support.v4.media.session.MediaControllerCompat;
 import android.support.v4.media.session.MediaSessionCompat;
 import android.support.v7.app.NotificationCompat;
 import android.util.Log;
-import android.widget.Toast;
 
 import java.io.IOException;
 
@@ -30,73 +30,76 @@ public class MediaPlayerService extends Service implements MediaPlayer.OnComplet
         MediaPlayer.OnInfoListener, MediaPlayer.OnBufferingUpdateListener,
         AudioManager.OnAudioFocusChangeListener {
 
+    public static final String ACTION_PLAY = "com.tanmay.biisit.ACTION_PLAY";
+    public static final String ACTION_PAUSE = "com.tanmay.biisit.ACTION_PAUSE";
+    public static final String ACTION_STOP = "com.tanmay.biisit.ACTION_STOP";
+
+    public static final String BROADCAST_RESUMED_ITEM_POS = "BROADCAST_RESUMED_ITEM_POS";
+    public static final String BROADCAST_CLIENT_ID_KEY = "BROADCAST_CLIENT_ID_KEY";
+    public static final String BROADCAST_CLIENT_ITEM_POS_KEY = "BROADCAST_CLIENT_ITEM_POS_KEY";
+    public static final String SERVICE_ACTION_START_PLAY = "com.tanmay.biisit.SERVICE_ACTION_START_PLAY";
+    public static final String SERVICE_ACTION_RESUME = "com.tanmay.biisit.SERVICE_ACTION_RESUME";
+    public static final String SERVICE_ACTION_PAUSE = "com.tanmay.biisit.SERVICE_ACTION_PAUSE";
+    public static final String SERVICE_ACTION_STOP = "com.tanmay.biisit.SERVICE_ACTION_STOP";
+    public static final String BROADCAST_MEDIA_URI_KEY = "BROADCAST_MEDIA_URI_KEY";
+
     private static final String LOG_TAG = MediaPlayerService.class.getSimpleName();
+    //AudioPlayer notification ID
+    private static final int NOTIFICATION_ID = 101;
     public static boolean sIsRunning = false;
-
-    private final IBinder mBinder = new MediaPlayerServiceBinder();
-
     private MediaPlayer mMediaPlayer;
     private int resumePosition;
     private AudioManager mAudioManager;
-    private MediaPlayerServiceEventListener mCurrentListener;
-
-    public static final String ACTION_PLAY = "com.valdioveliu.valdio.audioplayer.ACTION_PLAY";
-    public static final String ACTION_PAUSE = "com.valdioveliu.valdio.audioplayer.ACTION_PAUSE";
-    public static final String ACTION_PREVIOUS = "com.valdioveliu.valdio.audioplayer.ACTION_PREVIOUS";
-    public static final String ACTION_NEXT = "com.valdioveliu.valdio.audioplayer.ACTION_NEXT";
-    public static final String ACTION_STOP = "com.valdioveliu.valdio.audioplayer.ACTION_STOP";
-
     //MediaSession
     private MediaSessionManager mediaSessionManager;
     private MediaSessionCompat mediaSession;
     private MediaControllerCompat.TransportControls transportControls;
-
-    //AudioPlayer notification ID
-    private static final int NOTIFICATION_ID = 101;
     private MediaMetadataCompat mMetadata;
+    //Becoming noisy
+    private BroadcastReceiver becomingNoisyReceiver = new BroadcastReceiver() {
+        @Override
+        public void onReceive(Context context, Intent intent) {
+            //pause audio on ACTION_AUDIO_BECOMING_NOISY
+            pauseMedia();
+//            buildNotification(PlaybackStatus.PAUSED);
+        }
+    };
+    private int mCurrentClient = -1;
+    private int mClientItemPos = -1;
 
-    public enum PlaybackStatus {
-        PLAYING,
-        PAUSED
-    }
-
-
+    private MediaPlayerServiceReceiver mServiceBroadcastListener = new MediaPlayerServiceReceiver();
 
     public MediaPlayerService() {
     }
 
     @Override
     public void onCreate() {
+        Log.i(LOG_TAG, "onCreate: Service started");
         sIsRunning = true;
-        registerBecomingNoisyReceiver();
+        registerBroadcastReceivers();
         super.onCreate();
     }
 
     @Override
     public void onDestroy() {
-        Toast.makeText(this, "Service ended", Toast.LENGTH_SHORT).show();
+        Log.i(LOG_TAG, "onDestroy: Service ended");
         super.onDestroy();
         sIsRunning = false;
 
         if (mMediaPlayer != null) {
-            stopMedia();
+            stopMediaNoFeedback();
             mMediaPlayer.release();
         }
         removeAudioFocus();
 //        removeNotification();
-        unregisterBecomingNoisyReceiver();
+        unregisterBroadcastReceivers();
 //        stopMedia();
     }
 
+    @Nullable
     @Override
     public IBinder onBind(Intent intent) {
-        return mBinder;
-    }
-
-    @Override
-    public boolean onUnbind(Intent intent) {
-        Toast.makeText(this, "Service unbinding", Toast.LENGTH_SHORT).show();
-        return super.onUnbind(intent);
+        return null;
     }
 
     @Override
@@ -137,10 +140,6 @@ public class MediaPlayerService extends Service implements MediaPlayer.OnComplet
             case AudioManager.AUDIOFOCUS_LOSS:
                 // Lost focus for an unbounded amount of time: stop playback and release media player
                 stopMedia();
-                stopSelf();
-//                if (mMediaPlayer.isPlaying()) mMediaPlayer.stop();
-//                mMediaPlayer.release();
-//                mMediaPlayer = null;
                 break;
             case AudioManager.AUDIOFOCUS_LOSS_TRANSIENT:
                 // Lost focus for a short time, but we have to stop
@@ -181,8 +180,6 @@ public class MediaPlayerService extends Service implements MediaPlayer.OnComplet
     public void onCompletion(MediaPlayer mp) {
         //Invoked when playback of a media source has completed.
         stopMedia();
-        //stop the service
-        stopSelf();
     }
 
     @Override
@@ -234,6 +231,17 @@ public class MediaPlayerService extends Service implements MediaPlayer.OnComplet
 
     }
 
+    private void sendServiceBroadcast(String action){
+        Log.i(LOG_TAG, "sendServiceBroadcast: " + action);
+        Log.i(LOG_TAG, "sendServiceBroadcast: Sending client pos as " + mClientItemPos);
+        Intent intent = new Intent();
+        intent.setAction(action);
+        intent.putExtra(BROADCAST_CLIENT_ID_KEY, mCurrentClient);
+        intent.putExtra(BROADCAST_RESUMED_ITEM_POS, mClientItemPos);
+        sendBroadcast(intent);
+
+    }
+
     private void playMedia() {
         if (!mMediaPlayer.isPlaying()) {
             mMediaPlayer.start();
@@ -249,10 +257,10 @@ public class MediaPlayerService extends Service implements MediaPlayer.OnComplet
         }
         stopSelf();
     }
+
     public void stopMedia() {
         Log.i(LOG_TAG, "stopMedia: call received");
-        if (mCurrentListener != null)
-            mCurrentListener.onPlaybackStopped();
+        sendServiceBroadcast(ACTION_PAUSE);
         stopMediaNoFeedback();
     }
 
@@ -263,116 +271,41 @@ public class MediaPlayerService extends Service implements MediaPlayer.OnComplet
         }
         buildNotification(PlaybackStatus.PAUSED);
     }
+
     public void pauseMedia() {
         Log.i(LOG_TAG, "pauseMedia: call received");
-        if (mCurrentListener != null)
-            mCurrentListener.onPlaybackStopped();
+        sendServiceBroadcast(ACTION_PAUSE);
         pauseMediaNoFeedback();
     }
 
-    public void resumeMedia() {
+    private void resumeMediaNoFeedback(){
         if (!mMediaPlayer.isPlaying()) {
             mMediaPlayer.seekTo(resumePosition);
             mMediaPlayer.start();
         }
-//        TODO inform the listener about this
         buildNotification(PlaybackStatus.PLAYING);
     }
 
-    //Becoming noisy
-    private BroadcastReceiver becomingNoisyReceiver = new BroadcastReceiver() {
-        @Override
-        public void onReceive(Context context, Intent intent) {
-            //pause audio on ACTION_AUDIO_BECOMING_NOISY
-            pauseMedia();
-//            buildNotification(PlaybackStatus.PAUSED);
-        }
-    };
+    public void resumeMedia() {
+        Log.i(LOG_TAG, "resumeMedia: call received");
+        sendServiceBroadcast(ACTION_PLAY);
+        resumeMediaNoFeedback();
+    }
 
-    private void registerBecomingNoisyReceiver() {
+    private void registerBroadcastReceivers() {
         //register after getting audio focus
         IntentFilter intentFilter = new IntentFilter(AudioManager.ACTION_AUDIO_BECOMING_NOISY);
         registerReceiver(becomingNoisyReceiver, intentFilter);
+
+        intentFilter = new IntentFilter(SERVICE_ACTION_START_PLAY);
+        intentFilter.addAction(SERVICE_ACTION_RESUME);
+        intentFilter.addAction(SERVICE_ACTION_PAUSE);
+        intentFilter.addAction(SERVICE_ACTION_STOP);
+        registerReceiver(mServiceBroadcastListener, intentFilter);
     }
-    private void unregisterBecomingNoisyReceiver() {
+    private void unregisterBroadcastReceivers() {
         unregisterReceiver(becomingNoisyReceiver);
-    }
-
-    public class MediaPlayerServiceBinder extends Binder implements MediaPlayerServiceUpdater {
-        public MediaPlayerService getService() {
-            return MediaPlayerService.this;
-        }
-
-        @Override
-        public void addSource(Uri localMediaUri) {
-            initMediaPlayer();
-            MediaMetadataRetriever retriever = new MediaMetadataRetriever();
-            try {
-                // Set the data source to the mediaFile location
-                mMediaPlayer.setDataSource(MediaPlayerService.this, localMediaUri);
-                retriever.setDataSource(MediaPlayerService.this, localMediaUri);
-            } catch (IOException e) {
-                e.printStackTrace();
-                stopSelf();
-            }
-            setMetadata(retriever);
-            mMediaPlayer.prepareAsync();
-        }
-
-        @Override
-        public void addSource(String streamingURL) {
-            initMediaPlayer();
-            MediaMetadataRetriever retriever = new MediaMetadataRetriever();
-            try {
-                // Set the data source to the mediaFile location
-                mMediaPlayer.setDataSource(streamingURL);
-                retriever.setDataSource(streamingURL);
-            } catch (IOException e) {
-                e.printStackTrace();
-                stopSelf();
-            }
-            setMetadata(retriever);
-            mMediaPlayer.prepareAsync();
-        }
-        private void setMetadata(MediaMetadataRetriever retriever){
-            byte[] by = retriever.getEmbeddedPicture();
-            Bitmap b;
-            if (by != null)
-                b = BitmapFactory.decodeByteArray(by, 0, by.length);
-            else
-                b = BitmapFactory.decodeResource(getResources(), android.R.drawable.stat_sys_headset);
-            mMetadata = new MediaMetadataCompat.Builder()
-                    .putBitmap(MediaMetadataCompat.METADATA_KEY_ALBUM_ART, b)
-                    .putString(MediaMetadataCompat.METADATA_KEY_ARTIST, retriever.extractMetadata(MediaMetadataRetriever.METADATA_KEY_ARTIST))
-                    .putString(MediaMetadataCompat.METADATA_KEY_ALBUM, retriever.extractMetadata(MediaMetadataRetriever.METADATA_KEY_ALBUM))
-                    .putString(MediaMetadataCompat.METADATA_KEY_TITLE, retriever.extractMetadata(MediaMetadataRetriever.METADATA_KEY_TITLE))
-                    .build();
-        }
-
-        @Override
-        public void addEventListener(MediaPlayerServiceEventListener listener) {
-            Log.i(LOG_TAG, "addEventListener: new listener for playback stops");
-            if (mCurrentListener != null)
-                mCurrentListener.onPlaybackStopped();
-            mCurrentListener = listener;
-        }
-
-        @Override
-        public void removeEventListener(MediaPlayerServiceEventListener listener) {
-            if (mCurrentListener.equals(listener))
-                mCurrentListener = null;
-        }
-    }
-
-    public interface MediaPlayerServiceEventListener{
-        public void onPlaybackStopped();
-    }
-
-    public interface MediaPlayerServiceUpdater {
-        public void addSource(Uri localMediaUri);
-        public void addSource(String streamingURL);
-        public void addEventListener(MediaPlayerServiceEventListener listener);
-        public void removeEventListener(MediaPlayerServiceEventListener listener);
+        unregisterReceiver(mServiceBroadcastListener);
     }
 
     private void initMediaSession() throws RemoteException {
@@ -396,7 +329,8 @@ public class MediaPlayerService extends Service implements MediaPlayer.OnComplet
 
         // Attach Callback to receive MediaSession updates
         mediaSession.setCallback(new MediaSessionCompat.Callback() {
-            // Implement callbacks
+            // Implement callbacks, from notification and controller. Service internal callbacks.
+            // DO Inform current player about this to update UI
             @Override
             public void onPlay() {
                 super.onPlay();
@@ -411,28 +345,10 @@ public class MediaPlayerService extends Service implements MediaPlayer.OnComplet
 
             }
 
-//            @Override
-//            public void onSkipToNext() {
-//                super.onSkipToNext();
-//                skipToNext();
-//                updateMetaData();
-//                buildNotification(PlaybackStatus.PLAYING);
-//            }
-//
-//            @Override
-//            public void onSkipToPrevious() {
-//                super.onSkipToPrevious();
-//                skipToPrevious();
-//                updateMetaData();
-//                buildNotification(PlaybackStatus.PLAYING);
-//            }
-
             @Override
             public void onStop() {
                 super.onStop();
-                removeNotification();
-                //Stop the service
-                stopSelf();
+                stopMedia();
             }
 
             @Override
@@ -506,14 +422,6 @@ public class MediaPlayerService extends Service implements MediaPlayer.OnComplet
                 // Pause
                 playbackAction.setAction(ACTION_PAUSE);
                 return PendingIntent.getService(this, actionNumber, playbackAction, 0);
-//            case 2:
-//                // Next track
-//                playbackAction.setAction(ACTION_NEXT);
-//                return PendingIntent.getService(this, actionNumber, playbackAction, 0);
-//            case 3:
-//                // Previous track
-//                playbackAction.setAction(ACTION_PREVIOUS);
-//                return PendingIntent.getService(this, actionNumber, playbackAction, 0);
             default:
                 break;
         }
@@ -528,13 +436,95 @@ public class MediaPlayerService extends Service implements MediaPlayer.OnComplet
             transportControls.play();
         } else if (actionString.equalsIgnoreCase(ACTION_PAUSE)) {
             transportControls.pause();
-//        } else if (actionString.equalsIgnoreCase(ACTION_NEXT)) {
-//            transportControls.skipToNext();
-//        } else if (actionString.equalsIgnoreCase(ACTION_PREVIOUS)) {
-//            transportControls.skipToPrevious();
         } else if (actionString.equalsIgnoreCase(ACTION_STOP)) {
             transportControls.stop();
         }
     }
 
+    private void setMetadata(MediaMetadataRetriever retriever){
+        byte[] by = retriever.getEmbeddedPicture();
+        Bitmap b;
+        if (by != null)
+            b = BitmapFactory.decodeByteArray(by, 0, by.length);
+        else
+            b = BitmapFactory.decodeResource(getResources(), android.R.drawable.stat_sys_headset);
+        mMetadata = new MediaMetadataCompat.Builder()
+                .putBitmap(MediaMetadataCompat.METADATA_KEY_ALBUM_ART, b)
+                .putString(MediaMetadataCompat.METADATA_KEY_ARTIST, retriever.extractMetadata(MediaMetadataRetriever.METADATA_KEY_ARTIST))
+                .putString(MediaMetadataCompat.METADATA_KEY_ALBUM, retriever.extractMetadata(MediaMetadataRetriever.METADATA_KEY_ALBUM))
+                .putString(MediaMetadataCompat.METADATA_KEY_TITLE, retriever.extractMetadata(MediaMetadataRetriever.METADATA_KEY_TITLE))
+                .build();
+    }
+
+    public enum PlaybackStatus {
+        PLAYING,
+        PAUSED
+    }
+
+    public class MediaPlayerServiceReceiver extends BroadcastReceiver {
+
+        public MediaPlayerServiceReceiver() {
+            Log.i(LOG_TAG, "MediaPlayerServiceReceiver: Created");
+        }
+
+        @Override
+        public void onReceive(Context context, Intent intent) {
+            //This will be called from an external source, usually from the existing player, but also from new players
+            Log.i(LOG_TAG, "onReceive: " + intent.getAction());
+            Bundle extras = intent.getExtras();
+
+            if (intent.getAction().equals(SERVICE_ACTION_START_PLAY)){
+
+                Uri localMediaUri = null;
+                int clientId = -1;
+                int clientItemPos = -1;
+                try {
+                    localMediaUri = (Uri)extras.get(BROADCAST_MEDIA_URI_KEY);
+                    clientId = extras.getInt(BROADCAST_CLIENT_ID_KEY);
+                    clientItemPos = extras.getInt(BROADCAST_CLIENT_ITEM_POS_KEY);
+                }
+                catch (Exception e){
+                    e.printStackTrace();
+                    stopSelf();
+                }
+                if (mCurrentClient != -1 && mCurrentClient != clientId){
+                    sendServiceBroadcast(ACTION_PAUSE);
+                }
+                else if (mClientItemPos == clientItemPos){
+//                    This shouldn't happen, but handle it to be nice
+                    resumeMediaNoFeedback();
+                    return;
+                }
+
+                mCurrentClient = clientId;
+                mClientItemPos = clientItemPos;
+                Log.i(LOG_TAG, "onReceive: Saving client pos as " + mClientItemPos);
+
+                initMediaPlayer();
+                MediaMetadataRetriever retriever = new MediaMetadataRetriever();
+                try {
+                    // Set the data source to the mediaFile location
+                    if (localMediaUri != null) {
+                        mMediaPlayer.setDataSource(MediaPlayerService.this, localMediaUri);
+                        retriever.setDataSource(MediaPlayerService.this, localMediaUri);
+                    }
+                } catch (IOException e) {
+                    e.printStackTrace();
+                    stopSelf();
+                }
+                setMetadata(retriever);
+                mMediaPlayer.prepareAsync();
+            }
+
+            else if (intent.getAction().equals(SERVICE_ACTION_RESUME)){
+                resumeMediaNoFeedback();
+            }
+            else if (intent.getAction().equals(SERVICE_ACTION_PAUSE)){
+                pauseMediaNoFeedback();
+            }
+            else if (intent.getAction().equals(SERVICE_ACTION_STOP)){
+                stopMediaNoFeedback();
+            }
+        }
+    }
 }

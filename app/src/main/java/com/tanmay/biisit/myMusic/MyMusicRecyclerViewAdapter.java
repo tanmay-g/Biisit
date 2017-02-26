@@ -14,15 +14,13 @@ import android.widget.ImageView;
 import android.widget.TextView;
 
 import com.tanmay.biisit.R;
-import com.tanmay.biisit.myMusic.interfaces.OnListFragmentInteractionListener;
 
-//import com.tanmay.biisit.myMusic.MyMusicFragment.OnListFragmentInteractionListener;
 
 /**
  * {@link RecyclerView.Adapter} that can display a song from a cursor and makes a call to the
  * specified {@link OnListFragmentInteractionListener}.
  */
-public class MyMusicRecyclerViewAdapter extends RecyclerView.Adapter<MyMusicRecyclerViewAdapter.ViewHolder> {
+class MyMusicRecyclerViewAdapter extends RecyclerView.Adapter<MyMusicRecyclerViewAdapter.ViewHolder> {
 
     private static final String LOG_TAG = MyMusicRecyclerViewAdapter.class.getSimpleName();
     private final Cursor mValues;
@@ -34,7 +32,7 @@ public class MyMusicRecyclerViewAdapter extends RecyclerView.Adapter<MyMusicRecy
     private int mSelectedPosition = -1;
     private View mSelectedView;
 
-    public MyMusicRecyclerViewAdapter(Context context, OnListFragmentInteractionListener listener, Cursor data) {
+    MyMusicRecyclerViewAdapter(Context context, OnListFragmentInteractionListener listener, Cursor data) {
         mContext = context;
         mValues = data;
         mListener = listener;
@@ -78,6 +76,7 @@ public class MyMusicRecyclerViewAdapter extends RecyclerView.Adapter<MyMusicRecy
         if (position == mSelectedPosition){
             holder.mView.setSelected(true);
             mSelectedView = holder.mView;
+            holder.mButton.setImageResource(R.drawable.ic_pause);
         }
         else
             holder.mView.setSelected(false);
@@ -106,14 +105,28 @@ public class MyMusicRecyclerViewAdapter extends RecyclerView.Adapter<MyMusicRecy
         mSelectedPosition = -1;
     }
 
-    public class ViewHolder extends RecyclerView.ViewHolder implements View.OnClickListener {
-        public final View mView;
-        public final TextView mIdView;
-        public final TextView mTitleView;
-        public final TextView mArtistView;
-        public final ImageView mButton;
+    Uri getUriAtPos(int position){
+        mValues.moveToPosition(position);
+        Uri mediaUri=
+                ContentUris
+                        .withAppendedId(MediaStore.Audio.Media.EXTERNAL_CONTENT_URI,
+                                mValues.getInt(mIdColumn));
+        return mediaUri;
 
-        public ViewHolder(View view) {
+    }
+
+    interface OnListFragmentInteractionListener {
+        void onListFragmentInteraction(Uri mediaUriToPlay, boolean start, int position);
+    }
+
+    class ViewHolder extends RecyclerView.ViewHolder implements View.OnClickListener {
+        final View mView;
+        final TextView mIdView;
+        final TextView mTitleView;
+        final TextView mArtistView;
+        final ImageView mButton;
+
+        ViewHolder(View view) {
             super(view);
             mView = view;
             mIdView = (TextView) view.findViewById(R.id.music_id);
@@ -151,7 +164,7 @@ public class MyMusicRecyclerViewAdapter extends RecyclerView.Adapter<MyMusicRecy
                     ContentUris
                             .withAppendedId(MediaStore.Audio.Media.EXTERNAL_CONTENT_URI,
                                     mValues.getInt(mIdColumn));
-            mListener.onListFragmentInteraction(mediaUri, !isAlreadyRunning);
+            mListener.onListFragmentInteraction(mediaUri, !isAlreadyRunning, adapterPosition);
 
         }
     }

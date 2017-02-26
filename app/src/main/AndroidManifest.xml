@@ -4,7 +4,7 @@
 
     <uses-permission android:name="android.permission.READ_EXTERNAL_STORAGE"/>
     <uses-permission android:name="android.permission.WAKE_LOCK"/>
-    <uses-permission android:name="android.permission.INTERNET" />
+    <uses-permission android:name="android.permission.INTERNET"/>
 
     <application
         android:allowBackup="true"
@@ -23,18 +23,38 @@
             </intent-filter>
         </activity>
 
-        <!--<service android:name=".MediaPlaybackService">-->
-            <!--<intent-filter>-->
-                <!--<action android:name="android.media.browse.MediaBrowserService"/>-->
-            <!--</intent-filter>-->
-        <!--</service>-->
+        <!-- <service android:name=".MediaPlaybackService"> -->
+        <!-- <intent-filter> -->
+        <!-- <action android:name="android.media.browse.MediaBrowserService"/> -->
+        <!-- </intent-filter> -->
+        <!-- </service> -->
 
         <service
             android:name=".MediaPlayerService"
             android:enabled="true"
-            android:exported="false"
-            >
+            android:exported="false">
         </service>
+
+        <!--<receiver-->
+            <!--android:name=".MediaPlayerService$MediaPlayerServiceReceiver"-->
+            <!--android:enabled="true"-->
+            <!--android:exported="false">-->
+            <!--<intent-filter>-->
+                <!--<action android:name="com.tanmay.biisit.SERVICE_ACTION_START_PLAY"/>-->
+                <!--<action android:name="com.tanmay.biisit.SERVICE_ACTION_RESUME"/>-->
+                <!--<action android:name="com.tanmay.biisit.ACTION_PAUSE"/>-->
+                <!--<action android:name="com.tanmay.biisit.ACTION_STOP"/>-->
+            <!--</intent-filter>-->
+        <!--</receiver>-->
+        <!--<receiver-->
+            <!--android:name=".myMusic.MyMusicFragment$MyMusicFragmentReceiver"-->
+            <!--android:enabled="true"-->
+            <!--android:exported="false">-->
+            <!--<intent-filter>-->
+                <!--<action android:name="com.tanmay.biisit.ACTION_PLAY"/>-->
+                <!--<action android:name="com.tanmay.biisit.ACTION_PAUSE"/>-->
+            <!--</intent-filter>-->
+        <!--</receiver>-->
     </application>
 
 </manifest>
