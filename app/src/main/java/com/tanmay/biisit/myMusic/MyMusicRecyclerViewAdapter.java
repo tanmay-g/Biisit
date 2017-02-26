@@ -88,6 +88,24 @@ public class MyMusicRecyclerViewAdapter extends RecyclerView.Adapter<MyMusicRecy
         return (mValues != null && mValues.moveToFirst()) ? mValues.getCount() : 0;
     }
 
+    void selectItem(int position){
+        mSelectedPosition = position;
+        notifyItemChanged(mSelectedPosition);
+    }
+
+    void deselectCurrentItem(){
+        Log.i(LOG_TAG, "deselectCurrentItem: call received");
+        unSelectSelectedView();
+    }
+
+    private void unSelectSelectedView(){
+        if (mSelectedView != null) {
+            mSelectedView.setSelected(false);
+            ((ImageView)mSelectedView.findViewById(R.id.button)).setImageResource(R.drawable.ic_play);
+        }
+        mSelectedPosition = -1;
+    }
+
     public class ViewHolder extends RecyclerView.ViewHolder implements View.OnClickListener {
         public final View mView;
         public final TextView mIdView;
@@ -115,14 +133,9 @@ public class MyMusicRecyclerViewAdapter extends RecyclerView.Adapter<MyMusicRecy
             int adapterPosition = getAdapterPosition();
             mValues.moveToPosition(adapterPosition);
             Log.i(LOG_TAG, "onClick: position " + adapterPosition);
-            boolean isRunning = mView.isSelected();
-            if (mSelectedView != null)
-                ((ImageView)mSelectedView.findViewById(R.id.button)).setImageResource(R.drawable.ic_play);
-//                ((ImageView)mSelectedView.findViewById(R.id.button)).setBackground(ContextCompat.getDrawable(mContext, R.drawable.ic_play));
-            if (!isRunning){
-                if (mSelectedView != null) {
-                    mSelectedView.setSelected(false);
-                }
+            boolean isAlreadyRunning = mView.isSelected();
+            unSelectSelectedView();
+            if (!isAlreadyRunning){
                 mSelectedPosition = adapterPosition;
                 mSelectedView = mView;
             }
@@ -130,15 +143,15 @@ public class MyMusicRecyclerViewAdapter extends RecyclerView.Adapter<MyMusicRecy
                 mSelectedPosition = -1;
                 mSelectedView = null;
             }
-            mView.setSelected(!isRunning);
+            mView.setSelected(!isAlreadyRunning);
             mButton.setImageResource(
-                    !isRunning ? R.drawable.ic_pause : R.drawable.ic_play
+                    !isAlreadyRunning ? R.drawable.ic_pause : R.drawable.ic_play
             );
             Uri mediaUri=
                     ContentUris
                             .withAppendedId(MediaStore.Audio.Media.EXTERNAL_CONTENT_URI,
                                     mValues.getInt(mIdColumn));
-            mListener.onListFragmentInteraction(mediaUri, !isRunning);
+            mListener.onListFragmentInteraction(mediaUri, !isAlreadyRunning);
 
         }
     }

@@ -196,13 +196,13 @@ public class MyMusicFragment extends Fragment implements LoaderManager.LoaderCal
                 player.resumeMedia();
             else {
                 if (player != null)
-                    player.stopMedia();
+                    player.stopMediaNoFeedback();
                 playAudio(mediaUri);
             }
         }
         else {
             mLastPlayedUri = mediaUri;
-            player.pauseMedia();
+            player.pauseMediaNoFeedback();
         }
 //        String action = toStart? "Start" : "Stop";
 //        Toast.makeText(getActivity(), mediaUri + " is to be " + action + "ed", Toast.LENGTH_SHORT).show();
@@ -212,6 +212,7 @@ public class MyMusicFragment extends Fragment implements LoaderManager.LoaderCal
     @Override
     public void onPlaybackStopped() {
         Toast.makeText(getActivity(), "Playback stopped", Toast.LENGTH_SHORT).show();
+        ((MyMusicRecyclerViewAdapter)mRecyclerView.getAdapter()).deselectCurrentItem();
     }
 
     private void playAudio(Uri media) {
