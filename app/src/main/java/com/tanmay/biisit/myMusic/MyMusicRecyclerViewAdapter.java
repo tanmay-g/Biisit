@@ -93,7 +93,7 @@ class MyMusicRecyclerViewAdapter extends RecyclerView.Adapter<MyMusicRecyclerVie
     }
 
     void deselectCurrentItem(){
-        Log.i(LOG_TAG, "deselectCurrentItem: call received");
+//        Log.i(LOG_TAG, "deselectCurrentItem: call received");
         unSelectSelectedView();
     }
 

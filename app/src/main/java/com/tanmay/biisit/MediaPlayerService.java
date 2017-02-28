@@ -13,10 +13,10 @@ import android.media.MediaMetadataRetriever;
 import android.media.MediaPlayer;
 import android.media.session.MediaSessionManager;
 import android.net.Uri;
+import android.os.Binder;
 import android.os.Bundle;
 import android.os.IBinder;
 import android.os.RemoteException;
-import android.support.annotation.Nullable;
 import android.support.v4.media.MediaMetadataCompat;
 import android.support.v4.media.session.MediaControllerCompat;
 import android.support.v4.media.session.MediaSessionCompat;
@@ -33,15 +33,19 @@ public class MediaPlayerService extends Service implements MediaPlayer.OnComplet
     public static final String ACTION_PLAY = "com.tanmay.biisit.ACTION_PLAY";
     public static final String ACTION_PAUSE = "com.tanmay.biisit.ACTION_PAUSE";
     public static final String ACTION_STOP = "com.tanmay.biisit.ACTION_STOP";
+    public static final String ACTION_REDRAW = "com.tanmay.biisit.ACTION_REDRAW";
 
-    public static final String BROADCAST_RESUMED_ITEM_POS = "BROADCAST_RESUMED_ITEM_POS";
+    public static final String BROADCAST_RESUMED_ITEM_POS_KEY = "BROADCAST_RESUMED_ITEM_POS_KEY";
     public static final String BROADCAST_CLIENT_ID_KEY = "BROADCAST_CLIENT_ID_KEY";
     public static final String BROADCAST_CLIENT_ITEM_POS_KEY = "BROADCAST_CLIENT_ITEM_POS_KEY";
+    public static final String BROADCAST_SEEK_POSITION_KEY = "BROADCAST_SEEK_POSITION_KEY";
+    public static final String BROADCAST_MEDIA_URI_KEY = "BROADCAST_MEDIA_URI_KEY";
+
     public static final String SERVICE_ACTION_START_PLAY = "com.tanmay.biisit.SERVICE_ACTION_START_PLAY";
     public static final String SERVICE_ACTION_RESUME = "com.tanmay.biisit.SERVICE_ACTION_RESUME";
     public static final String SERVICE_ACTION_PAUSE = "com.tanmay.biisit.SERVICE_ACTION_PAUSE";
     public static final String SERVICE_ACTION_STOP = "com.tanmay.biisit.SERVICE_ACTION_STOP";
-    public static final String BROADCAST_MEDIA_URI_KEY = "BROADCAST_MEDIA_URI_KEY";
+    public static final String SERVICE_ACTION_SEEK = "SERVICE_ACTION_SEEK";
 
     private static final String LOG_TAG = MediaPlayerService.class.getSimpleName();
     //AudioPlayer notification ID
@@ -68,6 +72,16 @@ public class MediaPlayerService extends Service implements MediaPlayer.OnComplet
     private int mClientItemPos = -1;
 
     private MediaPlayerServiceReceiver mServiceBroadcastListener = new MediaPlayerServiceReceiver();
+
+    public class ServiceBinder extends Binder{
+        public MediaPlayer getMediaPlayer(){
+            if (mMediaPlayer == null) {
+                Log.e(LOG_TAG, "getMediaPlayer: Bound too early");
+                initMediaPlayer();
+            }
+            return mMediaPlayer;
+        }
+    };
 
     public MediaPlayerService() {
     }
@@ -96,18 +110,22 @@ public class MediaPlayerService extends Service implements MediaPlayer.OnComplet
 //        stopMedia();
     }
 
-    @Nullable
+    private void endSelf(){
+        stopForeground(true);
+//        stopSelf();
+    }
+
     @Override
     public IBinder onBind(Intent intent) {
-        return null;
+        return new ServiceBinder();
     }
 
     @Override
     public int onStartCommand(Intent intent, int flags, int startId) {
         //Request audio focus
         if (!requestAudioFocus()) {
+            Log.i(LOG_TAG, "onStartCommand: Stopping because couldn't get audiofocus");
             stopMedia();
-            stopSelf();
         }
 
         if (mediaSessionManager == null) {
@@ -116,7 +134,7 @@ public class MediaPlayerService extends Service implements MediaPlayer.OnComplet
 //                initMediaPlayer();
             } catch (RemoteException e) {
                 e.printStackTrace();
-                stopSelf();
+                endSelf();
             }
 //            buildNotification(PlaybackStatus.PLAYING);
         }
@@ -139,6 +157,7 @@ public class MediaPlayerService extends Service implements MediaPlayer.OnComplet
                 break;
             case AudioManager.AUDIOFOCUS_LOSS:
                 // Lost focus for an unbounded amount of time: stop playback and release media player
+                Log.i(LOG_TAG, "onAudioFocusChange: Stopping because lost audiofocus");
                 stopMedia();
                 break;
             case AudioManager.AUDIOFOCUS_LOSS_TRANSIENT:
@@ -179,6 +198,7 @@ public class MediaPlayerService extends Service implements MediaPlayer.OnComplet
     @Override
     public void onCompletion(MediaPlayer mp) {
         //Invoked when playback of a media source has completed.
+        Log.i(LOG_TAG, "onCompletion: Stopping as media completed");
         stopMedia();
     }
 
@@ -206,6 +226,7 @@ public class MediaPlayerService extends Service implements MediaPlayer.OnComplet
     @Override
     public void onPrepared(MediaPlayer mp) {
         playMedia();
+        sendServiceBroadcast(ACTION_REDRAW);
     }
 
     @Override
@@ -233,11 +254,11 @@ public class MediaPlayerService extends Service implements MediaPlayer.OnComplet
 
     private void sendServiceBroadcast(String action){
         Log.i(LOG_TAG, "sendServiceBroadcast: " + action);
-        Log.i(LOG_TAG, "sendServiceBroadcast: Sending client pos as " + mClientItemPos);
+//        Log.i(LOG_TAG, "sendServiceBroadcast: Sending client pos as " + mClientItemPos);
         Intent intent = new Intent();
         intent.setAction(action);
         intent.putExtra(BROADCAST_CLIENT_ID_KEY, mCurrentClient);
-        intent.putExtra(BROADCAST_RESUMED_ITEM_POS, mClientItemPos);
+        intent.putExtra(BROADCAST_RESUMED_ITEM_POS_KEY, mClientItemPos);
         sendBroadcast(intent);
 
     }
@@ -250,17 +271,15 @@ public class MediaPlayerService extends Service implements MediaPlayer.OnComplet
     }
 
     public void stopMediaNoFeedback(){
-        if (mMediaPlayer == null)
-            return;
-        if (mMediaPlayer.isPlaying()) {
+        if (mMediaPlayer != null && mMediaPlayer.isPlaying()) {
             mMediaPlayer.stop();
         }
-        stopSelf();
+        endSelf();
     }
 
     public void stopMedia() {
         Log.i(LOG_TAG, "stopMedia: call received");
-        sendServiceBroadcast(ACTION_PAUSE);
+        sendServiceBroadcast(ACTION_STOP);
         stopMediaNoFeedback();
     }
 
@@ -301,6 +320,7 @@ public class MediaPlayerService extends Service implements MediaPlayer.OnComplet
         intentFilter.addAction(SERVICE_ACTION_RESUME);
         intentFilter.addAction(SERVICE_ACTION_PAUSE);
         intentFilter.addAction(SERVICE_ACTION_STOP);
+        intentFilter.addAction(SERVICE_ACTION_SEEK);
         registerReceiver(mServiceBroadcastListener, intentFilter);
     }
     private void unregisterBroadcastReceivers() {
@@ -333,6 +353,7 @@ public class MediaPlayerService extends Service implements MediaPlayer.OnComplet
             // DO Inform current player about this to update UI
             @Override
             public void onPlay() {
+                Log.i(LOG_TAG, "onPlay in mediaSessionCallback");
                 super.onPlay();
                 resumeMedia();
             }
@@ -348,11 +369,13 @@ public class MediaPlayerService extends Service implements MediaPlayer.OnComplet
             @Override
             public void onStop() {
                 super.onStop();
+                Log.i(LOG_TAG, "onStop in mediaSessionCallback");
                 stopMedia();
             }
 
             @Override
             public void onSeekTo(long position) {
+                Log.i(LOG_TAG, "seekTo in mediaSessionCallback");
                 super.onSeekTo(position);
             }
         });
@@ -405,11 +428,11 @@ public class MediaPlayerService extends Service implements MediaPlayer.OnComplet
         startForeground(NOTIFICATION_ID, notificationBuilder.build());
     }
 
-    private void removeNotification() {
-//        NotificationManager notificationManager = (NotificationManager) getSystemService(Context.NOTIFICATION_SERVICE);
-//        notificationManager.cancel(NOTIFICATION_ID);
-        stopForeground(true);
-    }
+//    private void removeNotification() {
+////        NotificationManager notificationManager = (NotificationManager) getSystemService(Context.NOTIFICATION_SERVICE);
+////        notificationManager.cancel(NOTIFICATION_ID);
+//        stopForeground(true);
+//    }
 
     private PendingIntent playbackAction(int actionNumber) {
         Intent playbackAction = new Intent(this, MediaPlayerService.class);
@@ -485,7 +508,7 @@ public class MediaPlayerService extends Service implements MediaPlayer.OnComplet
                 }
                 catch (Exception e){
                     e.printStackTrace();
-                    stopSelf();
+                    stopMedia();
                 }
                 if (mCurrentClient != -1 && mCurrentClient != clientId){
                     sendServiceBroadcast(ACTION_PAUSE);
@@ -498,8 +521,6 @@ public class MediaPlayerService extends Service implements MediaPlayer.OnComplet
 
                 mCurrentClient = clientId;
                 mClientItemPos = clientItemPos;
-                Log.i(LOG_TAG, "onReceive: Saving client pos as " + mClientItemPos);
-
                 initMediaPlayer();
                 MediaMetadataRetriever retriever = new MediaMetadataRetriever();
                 try {
@@ -510,7 +531,7 @@ public class MediaPlayerService extends Service implements MediaPlayer.OnComplet
                     }
                 } catch (IOException e) {
                     e.printStackTrace();
-                    stopSelf();
+                    stopMedia();
                 }
                 setMetadata(retriever);
                 mMediaPlayer.prepareAsync();
@@ -518,12 +539,20 @@ public class MediaPlayerService extends Service implements MediaPlayer.OnComplet
 
             else if (intent.getAction().equals(SERVICE_ACTION_RESUME)){
                 resumeMediaNoFeedback();
+                sendServiceBroadcast(ACTION_REDRAW);
             }
             else if (intent.getAction().equals(SERVICE_ACTION_PAUSE)){
                 pauseMediaNoFeedback();
+                sendServiceBroadcast(ACTION_REDRAW);
             }
             else if (intent.getAction().equals(SERVICE_ACTION_STOP)){
                 stopMediaNoFeedback();
+            }
+            else if (intent.getAction().equals(SERVICE_ACTION_SEEK)){
+                int newResumePos = extras.getInt(BROADCAST_SEEK_POSITION_KEY);
+                if (newResumePos != -1) {
+                    resumePosition = newResumePos;
+                }
             }
         }
     }
