@@ -145,8 +145,11 @@ public class MyMusicFragment extends Fragment implements LoaderManager.LoaderCal
     public void onDestroy() {
         Log.i(LOG_TAG, "onDestroy: Fragment destroyed");
         super.onDestroy();
+        if (mController != null)
+            mController.actuallyHide();
         unregisterBroadcastReceivers();
-        getActivity().unbindService(mServiceConn);
+        if (mServiceBound)
+            getActivity().unbindService(mServiceConn);
     }
 
     private void registerBroadcastReceivers() {
@@ -375,22 +378,26 @@ public class MyMusicFragment extends Fragment implements LoaderManager.LoaderCal
                 int itemPosToSelect = extras.getInt(BROADCAST_RESUMED_ITEM_POS_KEY);
                 Log.i(LOG_TAG, "onReceive: Got item to select as " + itemPosToSelect);
                 playbackStarted(itemPosToSelect);
-                mController.show();
+                refreshOrBind();
 //                mRecyclerView.getChildAt(itemPosToSelect)
             }
             else if (intent.getAction().equals(ACTION_PAUSE)){
                 playbackStopped();
-                mController.show();
+                refreshOrBind();
             }
             else if (intent.getAction().equals(ACTION_STOP)){
                 stopPlayAndUnbind();
             }
             else if (intent.getAction().equals(ACTION_REDRAW)){
-                if (mServiceBound)
-                    mController.show();
-                else
-                    getActivity().bindService(new Intent(getActivity(), MediaPlayerService.class), mServiceConn, Context.BIND_AUTO_CREATE);
+                refreshOrBind();
             }
+        }
+
+        private void refreshOrBind(){
+            if (mServiceBound)
+                mController.show();
+            else
+                getActivity().bindService(new Intent(getActivity(), MediaPlayerService.class), mServiceConn, Context.BIND_AUTO_CREATE);
         }
     }
 }

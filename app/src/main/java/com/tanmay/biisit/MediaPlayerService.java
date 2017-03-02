@@ -199,6 +199,7 @@ public class MediaPlayerService extends Service implements MediaPlayer.OnComplet
     public void onCompletion(MediaPlayer mp) {
         //Invoked when playback of a media source has completed.
         Log.i(LOG_TAG, "onCompletion: Stopping as media completed");
+        resumePosition = 0;
         stopMedia();
     }
 
@@ -514,8 +515,10 @@ public class MediaPlayerService extends Service implements MediaPlayer.OnComplet
                     sendServiceBroadcast(ACTION_PAUSE);
                 }
                 else if (mClientItemPos == clientItemPos){
+                    Log.i(LOG_TAG, "onReceive: Got a start request for something that was already playing");
 //                    This shouldn't happen, but handle it to be nice
                     resumeMediaNoFeedback();
+                    sendServiceBroadcast(ACTION_REDRAW);
                     return;
                 }
 

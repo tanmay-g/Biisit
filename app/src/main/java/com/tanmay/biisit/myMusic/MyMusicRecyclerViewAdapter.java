@@ -10,9 +10,15 @@ import android.util.Log;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
+import android.widget.CheckBox;
 import android.widget.ImageView;
 import android.widget.TextView;
 
+import com.google.firebase.database.DataSnapshot;
+import com.google.firebase.database.DatabaseError;
+import com.google.firebase.database.DatabaseReference;
+import com.google.firebase.database.FirebaseDatabase;
+import com.google.firebase.database.ValueEventListener;
 import com.tanmay.biisit.R;
 
 
@@ -31,11 +37,23 @@ class MyMusicRecyclerViewAdapter extends RecyclerView.Adapter<MyMusicRecyclerVie
     private final OnListFragmentInteractionListener mListener;
     private int mSelectedPosition = -1;
     private View mSelectedView;
+    private DatabaseReference mRootRef;
+
+    private DatabaseReference mUserInfoReference;
+    private DatabaseReference mUser1Reference;
+    private static final String USER_INFO_KEY = "user_info";
+
+    private static final String USER_1_KEY = "user_1";
+    private static final String ITEM_KEY_PREFIX = "item_";
 
     MyMusicRecyclerViewAdapter(Context context, OnListFragmentInteractionListener listener, Cursor data) {
         mContext = context;
         mValues = data;
         mListener = listener;
+
+        mRootRef = FirebaseDatabase.getInstance().getReference();
+        mUserInfoReference = mRootRef.child(USER_INFO_KEY);
+        mUser1Reference = mUserInfoReference.child(USER_1_KEY);
 
         if (mValues != null && mValues.moveToFirst()) {
             mTitleColumn = mValues.getColumnIndex
@@ -59,9 +77,21 @@ class MyMusicRecyclerViewAdapter extends RecyclerView.Adapter<MyMusicRecyclerVie
         return new ViewHolder(view);
     }
 
+
     @Override
     public void onBindViewHolder(final ViewHolder holder, int position) {
 //        holder.mItem = mValues.moveToPosition(position);
+        mUser1Reference.child(ITEM_KEY_PREFIX + position).addListenerForSingleValueEvent(new ValueEventListener() {
+            @Override
+            public void onDataChange(DataSnapshot dataSnapshot) {
+                    holder.mStar.setChecked(dataSnapshot.exists());
+            }
+
+            @Override
+            public void onCancelled(DatabaseError databaseError) {
+
+            }
+        });
         mValues.moveToPosition(position);
         holder.mIdView.setText(
                 String.valueOf((int) mValues.getLong(mIdColumn))
@@ -119,12 +149,57 @@ class MyMusicRecyclerViewAdapter extends RecyclerView.Adapter<MyMusicRecyclerVie
         void onListFragmentInteraction(Uri mediaUriToPlay, boolean start, int position);
     }
 
-    class ViewHolder extends RecyclerView.ViewHolder implements View.OnClickListener {
+    class ViewHolder extends RecyclerView.ViewHolder {
         final View mView;
         final TextView mIdView;
         final TextView mTitleView;
         final TextView mArtistView;
         final ImageView mButton;
+        final CheckBox mStar;
+
+        private final View.OnClickListener mainListener = new View.OnClickListener() {
+            @Override
+            public void onClick(View v) {
+                int adapterPosition = getAdapterPosition();
+                mValues.moveToPosition(adapterPosition);
+                Log.i(LOG_TAG, "onClick: position " + adapterPosition);
+                boolean isAlreadyRunning = mView.isSelected();
+                unSelectSelectedView();
+                if (!isAlreadyRunning){
+                    mSelectedPosition = adapterPosition;
+                    mSelectedView = mView;
+                }
+                else {
+                    mSelectedPosition = -1;
+                    mSelectedView = null;
+                }
+                mView.setSelected(!isAlreadyRunning);
+                mButton.setImageResource(
+                        !isAlreadyRunning ? R.drawable.ic_pause : R.drawable.ic_play
+                );
+                Uri mediaUri=
+                        ContentUris
+                                .withAppendedId(MediaStore.Audio.Media.EXTERNAL_CONTENT_URI,
+                                        mValues.getInt(mIdColumn));
+                mListener.onListFragmentInteraction(mediaUri, !isAlreadyRunning, adapterPosition);
+            }
+        };
+
+        private final View.OnClickListener starListener = new View.OnClickListener() {
+            @Override
+            public void onClick(View v) {
+                CheckBox checkBox = (CheckBox) v;
+                boolean isChecked = checkBox.isChecked();
+                int adapterPosition = getAdapterPosition();
+                Uri selectedUri = getUriAtPos(adapterPosition);
+
+                if (isChecked)
+                    mUser1Reference.child(ITEM_KEY_PREFIX + adapterPosition).setValue(selectedUri.toString());
+                else
+                    mUser1Reference.child(ITEM_KEY_PREFIX + adapterPosition).setValue(null);
+
+            }
+        };
 
         ViewHolder(View view) {
             super(view);
@@ -133,39 +208,14 @@ class MyMusicRecyclerViewAdapter extends RecyclerView.Adapter<MyMusicRecyclerVie
             mTitleView = (TextView) view.findViewById(R.id.music_title);
             mArtistView = (TextView) view.findViewById(R.id.music_artist);
             mButton = (ImageView) view.findViewById(R.id.button);
-            mView.setOnClickListener(this);
+            mStar = ((CheckBox) mView.findViewById(R.id.checkBox));
+            mView.setOnClickListener(mainListener);
+            mStar.setOnClickListener(starListener);
         }
 
         @Override
         public String toString() {
             return super.toString() + " '" + mTitleView.getText() + "'";
-        }
-
-        @Override
-        public void onClick(View v) {
-            int adapterPosition = getAdapterPosition();
-            mValues.moveToPosition(adapterPosition);
-            Log.i(LOG_TAG, "onClick: position " + adapterPosition);
-            boolean isAlreadyRunning = mView.isSelected();
-            unSelectSelectedView();
-            if (!isAlreadyRunning){
-                mSelectedPosition = adapterPosition;
-                mSelectedView = mView;
-            }
-            else {
-                mSelectedPosition = -1;
-                mSelectedView = null;
-            }
-            mView.setSelected(!isAlreadyRunning);
-            mButton.setImageResource(
-                    !isAlreadyRunning ? R.drawable.ic_pause : R.drawable.ic_play
-            );
-            Uri mediaUri=
-                    ContentUris
-                            .withAppendedId(MediaStore.Audio.Media.EXTERNAL_CONTENT_URI,
-                                    mValues.getInt(mIdColumn));
-            mListener.onListFragmentInteraction(mediaUri, !isAlreadyRunning, adapterPosition);
-
         }
     }
 }
