@@ -21,6 +21,7 @@ import android.support.v7.app.AppCompatActivity;
 import android.support.v7.widget.LinearLayoutManager;
 import android.support.v7.widget.RecyclerView;
 import android.support.v7.widget.Toolbar;
+import android.text.TextUtils;
 import android.util.Log;
 import android.view.LayoutInflater;
 import android.view.View;
@@ -28,8 +29,17 @@ import android.view.ViewGroup;
 import android.widget.MediaController;
 import android.widget.Toast;
 
+import com.google.firebase.database.DataSnapshot;
+import com.google.firebase.database.DatabaseError;
+import com.google.firebase.database.DatabaseReference;
+import com.google.firebase.database.FirebaseDatabase;
+import com.google.firebase.database.ValueEventListener;
 import com.tanmay.biisit.MediaPlayerService;
 import com.tanmay.biisit.R;
+
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.List;
 
 import static com.tanmay.biisit.MediaPlayerService.ACTION_PAUSE;
 import static com.tanmay.biisit.MediaPlayerService.ACTION_PLAY;
@@ -49,7 +59,10 @@ import static com.tanmay.biisit.MediaPlayerService.SERVICE_ACTION_START_PLAY;
  * A fragment representing a list of Items.
  * <p/>
  */
-public class MyMusicFragment extends Fragment implements LoaderManager.LoaderCallbacks<Cursor>, MyMusicRecyclerViewAdapter.OnListFragmentInteractionListener, MediaController.MediaPlayerControl {
+public class MyMusicFragment extends Fragment
+        implements LoaderManager.LoaderCallbacks<Cursor>,
+        MyMusicRecyclerViewAdapter.OnListFragmentInteractionListener,
+        MediaController.MediaPlayerControl {
 
     public static final int MY_MUSIC_FRAGMENT_CLIENT_ID = 101;
     private static final String LOG_TAG = MyMusicFragment.class.getSimpleName();
@@ -74,6 +87,15 @@ public class MyMusicFragment extends Fragment implements LoaderManager.LoaderCal
     private ServiceConnection mServiceConn;
     private MediaPlayer mServiceMediaPlayer = null;
     private int mLastSelectedPos;
+
+    private boolean mOnlyFav = true;
+
+    private DatabaseReference mRootRef;
+    private DatabaseReference mUserInfoReference;
+    private DatabaseReference mUser1Reference;
+    private static final String USER_INFO_KEY = "user_info";
+    private static final String USER_1_KEY = "user_1";
+    private List<Integer> mFavouriteIds = new ArrayList<>();
 
     private class CustomMediaController extends MediaController{
 
@@ -193,13 +215,50 @@ public class MyMusicFragment extends Fragment implements LoaderManager.LoaderCal
         mController.setAnchorView(view.findViewById(R.id.recyclerView));
         mController.setEnabled(true);
 
-        getActivity().getSupportLoaderManager().initLoader(CURSOR_LOADER_ID, null, this);
+        mRootRef = FirebaseDatabase.getInstance().getReference();
+        mUserInfoReference = mRootRef.child(USER_INFO_KEY);
+        mUser1Reference = mUserInfoReference.child(USER_1_KEY);
+
+        mUser1Reference.addValueEventListener(new ValueEventListener() {
+            @Override
+            public void onDataChange(DataSnapshot dataSnapshot) {
+                Log.i(LOG_TAG, "onDataChange: UserData updated, so will restart loader");
+                mFavouriteIds.clear();
+                for (DataSnapshot i : dataSnapshot.getChildren()){
+                    mFavouriteIds.add(Integer.valueOf(i.getKey()));
+                }
+                getActivity().getSupportLoaderManager().restartLoader(CURSOR_LOADER_ID, null, MyMusicFragment.this);
+            }
+
+            @Override
+            public void onCancelled(DatabaseError databaseError) {
+
+            }
+        });
+
+
         return view;
     }
 
     @Override
     public Loader<Cursor> onCreateLoader(int id, Bundle args) {
-        return new CursorLoader(getActivity(), android.provider.MediaStore.Audio.Media.EXTERNAL_CONTENT_URI, null, null, null, null);
+        Log.i(LOG_TAG, "onCreateLoader: For fav only?: " + mOnlyFav);
+        if (mOnlyFav) {
+//            StringBuilder whereStr = new StringBuilder(" _ID in (");
+//            String[] ids = new String[mFavouriteIds.size()];
+//            for (int i = 0; i < mFavouriteIds.size(); i++){
+//                ids[i] = String.valueOf(mFavouriteIds.get(i));
+//            }
+//            whereStr.append(TextUtils.join(", ", ids));
+//            whereStr.append(")");
+            String whereStr = " _ID in (" + TextUtils.join(", ", Arrays.toString(mFavouriteIds.toArray()).split("[\\[\\]]")[1].split(", ")) + ")";
+//            Log.w(LOG_TAG, "onCreateLoader: " + mFavouriteIds.toString());
+            Log.w(LOG_TAG, "onCreateLoader: " + whereStr);
+            return new CursorLoader(getActivity(), android.provider.MediaStore.Audio.Media.EXTERNAL_CONTENT_URI, null, whereStr, null, null);
+
+        }
+        else
+            return new CursorLoader(getActivity(), android.provider.MediaStore.Audio.Media.EXTERNAL_CONTENT_URI, null, null, null, null);
     }
 
     @Override

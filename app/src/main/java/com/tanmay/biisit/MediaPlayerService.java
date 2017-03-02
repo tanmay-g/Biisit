@@ -45,7 +45,7 @@ public class MediaPlayerService extends Service implements MediaPlayer.OnComplet
     public static final String SERVICE_ACTION_RESUME = "com.tanmay.biisit.SERVICE_ACTION_RESUME";
     public static final String SERVICE_ACTION_PAUSE = "com.tanmay.biisit.SERVICE_ACTION_PAUSE";
     public static final String SERVICE_ACTION_STOP = "com.tanmay.biisit.SERVICE_ACTION_STOP";
-    public static final String SERVICE_ACTION_SEEK = "SERVICE_ACTION_SEEK";
+    public static final String SERVICE_ACTION_SEEK = "com.tanmay.biisit.SERVICE_ACTION_SEEK";
 
     private static final String LOG_TAG = MediaPlayerService.class.getSimpleName();
     //AudioPlayer notification ID

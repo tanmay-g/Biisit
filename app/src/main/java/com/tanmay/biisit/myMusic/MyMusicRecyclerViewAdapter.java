@@ -37,14 +37,13 @@ class MyMusicRecyclerViewAdapter extends RecyclerView.Adapter<MyMusicRecyclerVie
     private final OnListFragmentInteractionListener mListener;
     private int mSelectedPosition = -1;
     private View mSelectedView;
-    private DatabaseReference mRootRef;
 
+    private DatabaseReference mRootRef;
     private DatabaseReference mUserInfoReference;
     private DatabaseReference mUser1Reference;
     private static final String USER_INFO_KEY = "user_info";
-
     private static final String USER_1_KEY = "user_1";
-    private static final String ITEM_KEY_PREFIX = "item_";
+//    private static final String ITEM_KEY_PREFIX = "item_";
 
     MyMusicRecyclerViewAdapter(Context context, OnListFragmentInteractionListener listener, Cursor data) {
         mContext = context;
@@ -79,19 +78,9 @@ class MyMusicRecyclerViewAdapter extends RecyclerView.Adapter<MyMusicRecyclerVie
 
 
     @Override
-    public void onBindViewHolder(final ViewHolder holder, int position) {
+    public void onBindViewHolder(final ViewHolder holder, final int position) {
 //        holder.mItem = mValues.moveToPosition(position);
-        mUser1Reference.child(ITEM_KEY_PREFIX + position).addListenerForSingleValueEvent(new ValueEventListener() {
-            @Override
-            public void onDataChange(DataSnapshot dataSnapshot) {
-                    holder.mStar.setChecked(dataSnapshot.exists());
-            }
 
-            @Override
-            public void onCancelled(DatabaseError databaseError) {
-
-            }
-        });
         mValues.moveToPosition(position);
         holder.mIdView.setText(
                 String.valueOf((int) mValues.getLong(mIdColumn))
@@ -110,6 +99,19 @@ class MyMusicRecyclerViewAdapter extends RecyclerView.Adapter<MyMusicRecyclerVie
         }
         else
             holder.mView.setSelected(false);
+
+        mUser1Reference.child(holder.mIdView.getText().toString()).addListenerForSingleValueEvent(new ValueEventListener() {
+            @Override
+            public void onDataChange(DataSnapshot dataSnapshot) {
+//                Log.i(LOG_TAG, "onDataChange: Setting star at " + holder.getAdapterPosition() + " to " + dataSnapshot.exists() + " for key " + dataSnapshot.getKey());
+                holder.mStar.setChecked(dataSnapshot.exists());
+            }
+
+            @Override
+            public void onCancelled(DatabaseError databaseError) {
+
+            }
+        });
     }
 
     @Override
@@ -147,6 +149,7 @@ class MyMusicRecyclerViewAdapter extends RecyclerView.Adapter<MyMusicRecyclerVie
 
     interface OnListFragmentInteractionListener {
         void onListFragmentInteraction(Uri mediaUriToPlay, boolean start, int position);
+//        void onStarToggled();
     }
 
     class ViewHolder extends RecyclerView.ViewHolder {
@@ -188,15 +191,14 @@ class MyMusicRecyclerViewAdapter extends RecyclerView.Adapter<MyMusicRecyclerVie
         private final View.OnClickListener starListener = new View.OnClickListener() {
             @Override
             public void onClick(View v) {
+
                 CheckBox checkBox = (CheckBox) v;
                 boolean isChecked = checkBox.isChecked();
-                int adapterPosition = getAdapterPosition();
-                Uri selectedUri = getUriAtPos(adapterPosition);
-
+                Log.i(LOG_TAG, "onClickStar: Set to " + isChecked + " for the star at " + getAdapterPosition());
                 if (isChecked)
-                    mUser1Reference.child(ITEM_KEY_PREFIX + adapterPosition).setValue(selectedUri.toString());
+                    mUser1Reference.child((String) mIdView.getText()).setValue(mTitleView.getText());
                 else
-                    mUser1Reference.child(ITEM_KEY_PREFIX + adapterPosition).setValue(null);
+                    mUser1Reference.child((String) mIdView.getText()).setValue(null);
 
             }
         };
