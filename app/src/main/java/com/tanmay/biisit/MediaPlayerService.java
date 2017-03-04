@@ -275,6 +275,7 @@ public class MediaPlayerService extends Service implements MediaPlayer.OnComplet
         if (mMediaPlayer != null && mMediaPlayer.isPlaying()) {
             mMediaPlayer.stop();
         }
+//        sendServiceBroadcast(ACTION_REDRAW);
         endSelf();
     }
 
@@ -549,6 +550,7 @@ public class MediaPlayerService extends Service implements MediaPlayer.OnComplet
                 sendServiceBroadcast(ACTION_REDRAW);
             }
             else if (intent.getAction().equals(SERVICE_ACTION_STOP)){
+//                sendServiceBroadcast(ACTION_STOP);
                 stopMediaNoFeedback();
             }
             else if (intent.getAction().equals(SERVICE_ACTION_SEEK)){

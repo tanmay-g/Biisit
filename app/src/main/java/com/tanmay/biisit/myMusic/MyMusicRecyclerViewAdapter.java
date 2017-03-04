@@ -106,9 +106,9 @@ class MyMusicRecyclerViewAdapter extends RecyclerView.Adapter<MyMusicRecyclerVie
             @Override
             public void onDataChange(DataSnapshot dataSnapshot) {
 //                Log.i(LOG_TAG, "onDataChange: Setting star at " + holder.getAdapterPosition() + " to " + dataSnapshot.exists() + " for key " + dataSnapshot.getKey());
-                boolean valExistss = dataSnapshot.exists();
-                holder.mStar.setChecked(valExistss);
-                if (valExistss)
+                boolean valExists = dataSnapshot.exists();
+                holder.mStar.setChecked(valExists);
+                if (valExists)
                     holder.mActualPos = dataSnapshot.getValue(int.class);
             }
 
@@ -231,9 +231,9 @@ class MyMusicRecyclerViewAdapter extends RecyclerView.Adapter<MyMusicRecyclerVie
             mStar = ((CheckBox) mView.findViewById(R.id.checkBox));
             mView.setOnClickListener(mainListener);
             mStar.setOnClickListener(starListener);
-            if (mOnlyFav)
-                mActualPos = getAdapterPosition();
-            else
+//            if (mOnlyFav)
+//                mActualPos = getAdapterPosition();
+//            else
                 mActualPos = -1;
         }
 

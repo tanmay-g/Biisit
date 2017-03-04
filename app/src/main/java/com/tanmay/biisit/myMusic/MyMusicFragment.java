@@ -59,6 +59,7 @@ import static com.tanmay.biisit.MediaPlayerService.SERVICE_ACTION_PAUSE;
 import static com.tanmay.biisit.MediaPlayerService.SERVICE_ACTION_RESUME;
 import static com.tanmay.biisit.MediaPlayerService.SERVICE_ACTION_SEEK;
 import static com.tanmay.biisit.MediaPlayerService.SERVICE_ACTION_START_PLAY;
+import static com.tanmay.biisit.MediaPlayerService.SERVICE_ACTION_STOP;
 
 /**
  * A fragment representing a list of Items.
@@ -166,8 +167,10 @@ public class MyMusicFragment extends Fragment
     }
 
     private void stopPlayAndUnbind(){
-        getActivity().unbindService(mServiceConn);
-        mServiceBound = false;
+        if (mServiceBound) {
+            getActivity().unbindService(mServiceConn);
+            mServiceBound = false;
+        }
         mServiceMediaPlayer = null;
         mController.actuallyHide();
         playbackStopped();
@@ -279,6 +282,7 @@ public class MyMusicFragment extends Fragment
 
 
     private void respondToSpinnerValueChanage(){
+        sendServiceBroadcast(SERVICE_ACTION_STOP);
         if (mOnlyFav) {
             Log.i(LOG_TAG, "respondToSpinnerValueChanage: Adding permanent listener");
             mUser1Reference.addValueEventListener(mUserValueEventListener);
