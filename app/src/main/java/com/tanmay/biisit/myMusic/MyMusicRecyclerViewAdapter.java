@@ -35,6 +35,7 @@ class MyMusicRecyclerViewAdapter extends RecyclerView.Adapter<MyMusicRecyclerVie
     private final int mIdColumn;
     private final int mArtistColumn;
     private final OnListFragmentInteractionListener mListener;
+    private boolean mOnlyFav;
     private int mSelectedPosition = -1;
     private View mSelectedView;
 
@@ -45,10 +46,11 @@ class MyMusicRecyclerViewAdapter extends RecyclerView.Adapter<MyMusicRecyclerVie
     private static final String USER_1_KEY = "user_1";
 //    private static final String ITEM_KEY_PREFIX = "item_";
 
-    MyMusicRecyclerViewAdapter(Context context, OnListFragmentInteractionListener listener, Cursor data) {
+    MyMusicRecyclerViewAdapter(Context context, OnListFragmentInteractionListener listener, Cursor data, boolean onlyFav) {
         mContext = context;
         mValues = data;
         mListener = listener;
+        mOnlyFav = onlyFav;
 
         mRootRef = FirebaseDatabase.getInstance().getReference();
         mUserInfoReference = mRootRef.child(USER_INFO_KEY);
@@ -104,7 +106,10 @@ class MyMusicRecyclerViewAdapter extends RecyclerView.Adapter<MyMusicRecyclerVie
             @Override
             public void onDataChange(DataSnapshot dataSnapshot) {
 //                Log.i(LOG_TAG, "onDataChange: Setting star at " + holder.getAdapterPosition() + " to " + dataSnapshot.exists() + " for key " + dataSnapshot.getKey());
-                holder.mStar.setChecked(dataSnapshot.exists());
+                boolean valExistss = dataSnapshot.exists();
+                holder.mStar.setChecked(valExistss);
+                if (valExistss)
+                    holder.mActualPos = dataSnapshot.getValue(int.class);
             }
 
             @Override
@@ -113,6 +118,11 @@ class MyMusicRecyclerViewAdapter extends RecyclerView.Adapter<MyMusicRecyclerVie
             }
         });
     }
+
+//    void updateFavOnlyState(boolean onlyFav){
+//        Log.i(LOG_TAG, "updateFavOnlyState: " + onlyFav);
+//        mOnlyFav = onlyFav;
+//    }
 
     @Override
     public int getItemCount() {
@@ -159,6 +169,7 @@ class MyMusicRecyclerViewAdapter extends RecyclerView.Adapter<MyMusicRecyclerVie
         final TextView mArtistView;
         final ImageView mButton;
         final CheckBox mStar;
+        int mActualPos;
 
         private final View.OnClickListener mainListener = new View.OnClickListener() {
             @Override
@@ -184,7 +195,14 @@ class MyMusicRecyclerViewAdapter extends RecyclerView.Adapter<MyMusicRecyclerVie
                         ContentUris
                                 .withAppendedId(MediaStore.Audio.Media.EXTERNAL_CONTENT_URI,
                                         mValues.getInt(mIdColumn));
-                mListener.onListFragmentInteraction(mediaUri, !isAlreadyRunning, adapterPosition);
+                if (mOnlyFav) {
+//                    Log.i(LOG_TAG, "onClick: telling fragment about click at the actual " + mActualPos);
+                    mListener.onListFragmentInteraction(mediaUri, !isAlreadyRunning, mActualPos);
+                } else {
+//                    Log.i(LOG_TAG, "onClick: telling fragment about click at " + adapterPosition);
+                    mListener.onListFragmentInteraction(mediaUri, !isAlreadyRunning, adapterPosition);
+                }
+
             }
         };
 
@@ -194,9 +212,9 @@ class MyMusicRecyclerViewAdapter extends RecyclerView.Adapter<MyMusicRecyclerVie
 
                 CheckBox checkBox = (CheckBox) v;
                 boolean isChecked = checkBox.isChecked();
-                Log.i(LOG_TAG, "onClickStar: Set to " + isChecked + " for the star at " + getAdapterPosition());
+//                Log.i(LOG_TAG, "onClickStar: Set to " + isChecked + " for the star at " + getAdapterPosition());
                 if (isChecked)
-                    mUser1Reference.child((String) mIdView.getText()).setValue(mTitleView.getText());
+                    mUser1Reference.child((String) mIdView.getText()).setValue(getAdapterPosition());
                 else
                     mUser1Reference.child((String) mIdView.getText()).setValue(null);
 
@@ -213,6 +231,10 @@ class MyMusicRecyclerViewAdapter extends RecyclerView.Adapter<MyMusicRecyclerVie
             mStar = ((CheckBox) mView.findViewById(R.id.checkBox));
             mView.setOnClickListener(mainListener);
             mStar.setOnClickListener(starListener);
+            if (mOnlyFav)
+                mActualPos = getAdapterPosition();
+            else
+                mActualPos = -1;
         }
 
         @Override

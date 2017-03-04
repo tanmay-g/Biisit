@@ -24,9 +24,14 @@ import android.support.v7.widget.Toolbar;
 import android.text.TextUtils;
 import android.util.Log;
 import android.view.LayoutInflater;
+import android.view.Menu;
+import android.view.MenuInflater;
 import android.view.View;
 import android.view.ViewGroup;
+import android.widget.AdapterView;
+import android.widget.ArrayAdapter;
 import android.widget.MediaController;
+import android.widget.Spinner;
 import android.widget.Toast;
 
 import com.google.firebase.database.DataSnapshot;
@@ -67,7 +72,8 @@ public class MyMusicFragment extends Fragment
     public static final int MY_MUSIC_FRAGMENT_CLIENT_ID = 101;
     private static final String LOG_TAG = MyMusicFragment.class.getSimpleName();
 //    private OnListFragmentInteractionListener mListener;
-    private static final int CURSOR_LOADER_ID = 1;
+    private static final int CURSOR_LOADER_ID_ALL = 1;
+    private static final int CURSOR_LOADER_ID_FAV = 2;
 
 //    private MediaSessionCompat mMediaSession;
 //    private PlaybackStateCompat.Builder mStateBuilder;
@@ -88,14 +94,17 @@ public class MyMusicFragment extends Fragment
     private MediaPlayer mServiceMediaPlayer = null;
     private int mLastSelectedPos;
 
-    private boolean mOnlyFav = true;
+    private boolean mOnlyFav = false;
 
     private DatabaseReference mRootRef;
     private DatabaseReference mUserInfoReference;
     private DatabaseReference mUser1Reference;
     private static final String USER_INFO_KEY = "user_info";
     private static final String USER_1_KEY = "user_1";
-    private List<Integer> mFavouriteIds = new ArrayList<>();
+    private List<Integer> mFavouriteIds = null; // new ArrayList<>();
+    private Spinner mSpinner;
+    private int mSpinnerSelectedPos = -1;
+    private ValueEventListener mUserValueEventListener;
 
     private class CustomMediaController extends MediaController{
 
@@ -145,6 +154,7 @@ public class MyMusicFragment extends Fragment
                 stopPlayAndUnbind();
             }
         };
+        setHasOptionsMenu(true);
         startServiceIfDown();
     }
 
@@ -172,6 +182,7 @@ public class MyMusicFragment extends Fragment
         unregisterBroadcastReceivers();
         if (mServiceBound)
             getActivity().unbindService(mServiceConn);
+        mUser1Reference.removeEventListener(mUserValueEventListener);
     }
 
     private void registerBroadcastReceivers() {
@@ -199,7 +210,7 @@ public class MyMusicFragment extends Fragment
 //            } else {
 //                mRecyclerView.setLayoutManager(new GridLayoutManager(context, mColumnCount));
 //            }
-            mRecyclerView.setAdapter(new MyMusicRecyclerViewAdapter(getActivity(), this, null));
+//            mRecyclerView.setAdapter(new MyMusicRecyclerViewAdapter(getActivity(), this, null, false));
         }
 
         Toolbar toolbar = (Toolbar) view.findViewById(R.id.toolbar);
@@ -219,53 +230,144 @@ public class MyMusicFragment extends Fragment
         mUserInfoReference = mRootRef.child(USER_INFO_KEY);
         mUser1Reference = mUserInfoReference.child(USER_1_KEY);
 
-        mUser1Reference.addValueEventListener(new ValueEventListener() {
+        mUserValueEventListener = new ValueEventListener() {
             @Override
             public void onDataChange(DataSnapshot dataSnapshot) {
-                Log.i(LOG_TAG, "onDataChange: UserData updated, so will restart loader");
-                mFavouriteIds.clear();
+                Log.i(LOG_TAG, "onDataChange: UserData updated/listener's first call");
+                List<Integer> newFavouriteIds = new ArrayList<>();
                 for (DataSnapshot i : dataSnapshot.getChildren()){
-                    mFavouriteIds.add(Integer.valueOf(i.getKey()));
+                    newFavouriteIds.add(Integer.valueOf(i.getKey()));
                 }
-                getActivity().getSupportLoaderManager().restartLoader(CURSOR_LOADER_ID, null, MyMusicFragment.this);
+                if (mOnlyFav){
+                    if (mFavouriteIds == null || mFavouriteIds.isEmpty() || !(mFavouriteIds.containsAll(newFavouriteIds) && newFavouriteIds.containsAll(mFavouriteIds))) {
+                        mFavouriteIds = newFavouriteIds;
+//                    if (mOnlyFav || mFavouriteIds == null){
+                        Log.i(LOG_TAG, "onDataChange: fav actually changed or was null, so will restart loader");
+                        restartCursorLoader();
+//                    }
+                    }
+                    else {
+                        initCursorLoader();
+                    }
+                }
             }
 
             @Override
             public void onCancelled(DatabaseError databaseError) {
 
             }
-        });
+        };
 
+//        respondToSpinnerValueChanage();
 
         return view;
+    }
+
+    private void restartCursorLoader(){
+        if (mOnlyFav)
+            getActivity().getSupportLoaderManager().restartLoader(CURSOR_LOADER_ID_FAV, null, MyMusicFragment.this);
+        else
+            getActivity().getSupportLoaderManager().restartLoader(CURSOR_LOADER_ID_ALL, null, MyMusicFragment.this);
+    }
+
+    private void initCursorLoader(){
+        if (mOnlyFav)
+            getActivity().getSupportLoaderManager().initLoader(CURSOR_LOADER_ID_FAV, null, MyMusicFragment.this);
+        else
+            getActivity().getSupportLoaderManager().initLoader(CURSOR_LOADER_ID_ALL, null, MyMusicFragment.this);
+    }
+
+
+    private void respondToSpinnerValueChanage(){
+        if (mOnlyFav) {
+            Log.i(LOG_TAG, "respondToSpinnerValueChanage: Adding permanent listener");
+            mUser1Reference.addValueEventListener(mUserValueEventListener);
+        }
+        else {
+            Log.i(LOG_TAG, "respondToSpinnerValueChanage: Adding one time listener");
+            mUser1Reference.addListenerForSingleValueEvent(mUserValueEventListener);
+        }
+//            we don't expect fav list to have changed, but we do want to refresh ui
+//        so if it's not empty then we assume that data listener won't ask for a loader restart, so we just init it here
+//        but if it changed to fav, then it will ask for restart, so we shoulnd't do it here
+
+        if (!mOnlyFav) {// && mFavouriteIds != null && !mFavouriteIds.isEmpty())
+            initCursorLoader();
+        }
+    }
+
+    @Override
+    public void onCreateOptionsMenu(Menu menu, MenuInflater inflater) {
+        super.onCreateOptionsMenu(menu, inflater);
+        inflater.inflate(R.menu.mymusic_fragment_menu, menu);
+        mSpinner = (Spinner) (menu.findItem(R.id.favourites_spinner_menu_item).getActionView());
+        ArrayAdapter<CharSequence> spinnerAdapter = ArrayAdapter.createFromResource(getActivity(),
+                R.array.favourites_spinner_choices,
+                R.layout.custom_spinner_item);
+        spinnerAdapter.setDropDownViewResource(R.layout.custom_spinner_dropdown_item);
+        if (mSpinner != null) {
+            mSpinner.setAdapter(spinnerAdapter);
+            mSpinner.setOnItemSelectedListener(new AdapterView.OnItemSelectedListener() {
+                @Override
+                public void onItemSelected(AdapterView<?> adapterView, View view, int position, long id) {
+                    if (mSpinnerSelectedPos != position) {
+                        Log.i(LOG_TAG, "onItemSelected: spinner was selected with new pos " + position);
+                        mSpinnerSelectedPos = position;
+                        mOnlyFav = (position == 1);
+//                        Log.i(LOG_TAG, "onItemSelected: removing listener for User1Ref");
+                        mUser1Reference.removeEventListener(mUserValueEventListener);
+                        respondToSpinnerValueChanage();
+//                        getActivity().getSupportLoaderManager().restartLoader(CURSOR_LOADER_ID_ALL, null, MyMusicFragment.this);
+                    }
+                }
+
+                @Override
+                public void onNothingSelected(AdapterView<?> adapterView) {
+
+                }
+            });
+        }
+        else
+            Log.e(LOG_TAG, "Didn't get the spinner");
+        if (mSpinnerSelectedPos != -1){
+            mSpinner.setSelection(mSpinnerSelectedPos);
+        }
+
     }
 
     @Override
     public Loader<Cursor> onCreateLoader(int id, Bundle args) {
         Log.i(LOG_TAG, "onCreateLoader: For fav only?: " + mOnlyFav);
-        if (mOnlyFav) {
-//            StringBuilder whereStr = new StringBuilder(" _ID in (");
-//            String[] ids = new String[mFavouriteIds.size()];
-//            for (int i = 0; i < mFavouriteIds.size(); i++){
-//                ids[i] = String.valueOf(mFavouriteIds.get(i));
-//            }
-//            whereStr.append(TextUtils.join(", ", ids));
-//            whereStr.append(")");
-            String whereStr = " _ID in (" + TextUtils.join(", ", Arrays.toString(mFavouriteIds.toArray()).split("[\\[\\]]")[1].split(", ")) + ")";
-//            Log.w(LOG_TAG, "onCreateLoader: " + mFavouriteIds.toString());
-            Log.w(LOG_TAG, "onCreateLoader: " + whereStr);
-            return new CursorLoader(getActivity(), android.provider.MediaStore.Audio.Media.EXTERNAL_CONTENT_URI, null, whereStr, null, null);
 
+        switch (id) {
+            case CURSOR_LOADER_ID_FAV:
+                if (mFavouriteIds.isEmpty()){
+                    Log.i(LOG_TAG, "onCreateLoader: No fav to show");
+//            TODO set empty view visible, and remove the below
+                        if (mRecyclerView != null) {
+                            mRecyclerViewAdapter = new MyMusicRecyclerViewAdapter(getActivity(), this, null, false);
+                            mRecyclerView.setAdapter(mRecyclerViewAdapter);
+                        }
+                        return null;
+                }
+//                Log.w(LOG_TAG, "onCreateLoader: " + mFavouriteIds.toString());
+                String whereStr = " _ID in (" + TextUtils.join(", ", Arrays.toString(mFavouriteIds.toArray()).split("[\\[\\]]")[1].split(", ")) + ")";
+//                Log.w(LOG_TAG, "onCreateLoader: " + whereStr);
+                return new CursorLoader(getActivity(), android.provider.MediaStore.Audio.Media.EXTERNAL_CONTENT_URI, null, whereStr, null, null);
+
+            case CURSOR_LOADER_ID_ALL:
+                return new CursorLoader(getActivity(), android.provider.MediaStore.Audio.Media.EXTERNAL_CONTENT_URI, null, null, null, null);
+
+            default:
+                return null;
         }
-        else
-            return new CursorLoader(getActivity(), android.provider.MediaStore.Audio.Media.EXTERNAL_CONTENT_URI, null, null, null, null);
     }
 
     @Override
     public void onLoadFinished(Loader<Cursor> loader, Cursor data) {
         Log.i(LOG_TAG, "onLoadFinished: got cursor of size " + data.getCount());
         if (mRecyclerView != null) {
-            mRecyclerViewAdapter = new MyMusicRecyclerViewAdapter(getActivity(), this, data);
+            mRecyclerViewAdapter = new MyMusicRecyclerViewAdapter(getActivity(), this, data, mOnlyFav);
             mRecyclerView.setAdapter(mRecyclerViewAdapter);
         }
         else
