@@ -69,6 +69,8 @@ public class NavigationDrawerActivity extends AppCompatActivity
             View header = mNavigationView.getHeaderView(0);
             ((TextView)header.findViewById(R.id.user_email)).setText(email);
             ((TextView)header.findViewById(R.id.user_name)).setText(name);
+            MenuItem signInOutMenuItem = mNavigationView.getMenu().findItem(R.id.sign_in_out);
+            signInOutMenuItem.setTitle("Sign Out");
         }
         else {
             if (mNavigationView == null)
@@ -76,6 +78,8 @@ public class NavigationDrawerActivity extends AppCompatActivity
             View header = mNavigationView.getHeaderView(0);
             ((TextView)header.findViewById(R.id.user_email)).setText("");
             ((TextView)header.findViewById(R.id.user_name)).setText("Biisit User");
+            MenuItem signInOutMenuItem = mNavigationView.getMenu().findItem(R.id.sign_in_out);
+            signInOutMenuItem.setTitle("Sign In");
         }
     }
 
@@ -191,8 +195,6 @@ public class NavigationDrawerActivity extends AppCompatActivity
 
         // Successfully signed in
         if (resultCode == ResultCodes.OK) {
-            MenuItem signInOutMenuItem = mNavigationView.getMenu().findItem(R.id.sign_in_out);
-            signInOutMenuItem.setTitle("Sign Out");
             updateUserDisplay();
             return;
         } else {

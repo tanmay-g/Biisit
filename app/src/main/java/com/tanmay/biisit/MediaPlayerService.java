@@ -290,6 +290,8 @@ public class MediaPlayerService extends Service implements MediaPlayer.OnComplet
             mMediaPlayer.pause();
             resumePosition = mMediaPlayer.getCurrentPosition();
         }
+        else
+            Log.i(LOG_TAG, "pauseMediaNoFeedback: GOT PAUSED WHILE NOT PLAYING!!!");
         buildNotification(PlaybackStatus.PAUSED);
     }
 

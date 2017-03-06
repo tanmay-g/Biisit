@@ -5,6 +5,7 @@ import android.content.Context;
 import android.database.Cursor;
 import android.net.Uri;
 import android.provider.MediaStore;
+import android.support.annotation.NonNull;
 import android.support.v7.widget.RecyclerView;
 import android.util.Log;
 import android.view.LayoutInflater;
@@ -14,12 +15,16 @@ import android.widget.CheckBox;
 import android.widget.ImageView;
 import android.widget.TextView;
 
+import com.google.firebase.auth.FirebaseAuth;
+import com.google.firebase.auth.FirebaseUser;
 import com.google.firebase.database.DataSnapshot;
 import com.google.firebase.database.DatabaseError;
 import com.google.firebase.database.DatabaseReference;
 import com.google.firebase.database.FirebaseDatabase;
 import com.google.firebase.database.ValueEventListener;
 import com.tanmay.biisit.R;
+
+import static com.tanmay.biisit.R.id.checkBox;
 
 
 /**
@@ -41,10 +46,26 @@ class MyMusicRecyclerViewAdapter extends RecyclerView.Adapter<MyMusicRecyclerVie
 
     private DatabaseReference mRootRef;
     private DatabaseReference mUserInfoReference;
-    private DatabaseReference mUser1Reference;
+    private DatabaseReference mSpecificUserDataReference;
     private static final String USER_INFO_KEY = "user_info";
-    private static final String USER_1_KEY = "user_1";
+//    private static final String USER_1_KEY = "user_1";
 //    private static final String ITEM_KEY_PREFIX = "item_";
+
+    private boolean mIsLoggedIn = false;
+    private String mUserId;
+    private FirebaseAuth.AuthStateListener mAuthListener;
+
+    @Override
+    public void onAttachedToRecyclerView(RecyclerView recyclerView) {
+        super.onAttachedToRecyclerView(recyclerView);
+        FirebaseAuth.getInstance().addAuthStateListener(mAuthListener);
+    }
+
+    @Override
+    public void onDetachedFromRecyclerView(RecyclerView recyclerView) {
+        super.onDetachedFromRecyclerView(recyclerView);
+        FirebaseAuth.getInstance().removeAuthStateListener(mAuthListener);
+    }
 
     MyMusicRecyclerViewAdapter(Context context, OnListFragmentInteractionListener listener, Cursor data, boolean onlyFav) {
         mContext = context;
@@ -54,7 +75,6 @@ class MyMusicRecyclerViewAdapter extends RecyclerView.Adapter<MyMusicRecyclerVie
 
         mRootRef = FirebaseDatabase.getInstance().getReference();
         mUserInfoReference = mRootRef.child(USER_INFO_KEY);
-        mUser1Reference = mUserInfoReference.child(USER_1_KEY);
 
         if (mValues != null && mValues.moveToFirst()) {
             mTitleColumn = mValues.getColumnIndex
@@ -69,6 +89,26 @@ class MyMusicRecyclerViewAdapter extends RecyclerView.Adapter<MyMusicRecyclerVie
             mIdColumn = 0;
             mArtistColumn = 0;
         }
+
+        mAuthListener = new FirebaseAuth.AuthStateListener() {
+            @Override
+            public void onAuthStateChanged(@NonNull FirebaseAuth firebaseAuth) {
+                FirebaseUser user = firebaseAuth.getCurrentUser();
+                if (user != null) {
+                    // User is signed in
+                    mUserId = user.getUid();
+                    Log.d(LOG_TAG, "onAuthStateChanged:signed_in:" + mUserId);
+                    mIsLoggedIn = true;
+                    mSpecificUserDataReference = mUserInfoReference.child(mUserId);
+                } else {
+                    // User is signed out
+                    Log.d(LOG_TAG, "onAuthStateChanged:signed_out");
+                    mSpecificUserDataReference = null;
+                    mIsLoggedIn = false;
+                }
+                notifyDataSetChanged();
+            }
+        };
     }
 
     @Override
@@ -102,21 +142,28 @@ class MyMusicRecyclerViewAdapter extends RecyclerView.Adapter<MyMusicRecyclerVie
         else
             holder.mView.setSelected(false);
 
-        mUser1Reference.child(holder.mIdView.getText().toString()).addListenerForSingleValueEvent(new ValueEventListener() {
-            @Override
-            public void onDataChange(DataSnapshot dataSnapshot) {
+        if (mIsLoggedIn) {
+            holder.mStar.setEnabled(true);
+            mSpecificUserDataReference.child(holder.mIdView.getText().toString()).addListenerForSingleValueEvent(new ValueEventListener() {
+                @Override
+                public void onDataChange(DataSnapshot dataSnapshot) {
 //                Log.i(LOG_TAG, "onDataChange: Setting star at " + holder.getAdapterPosition() + " to " + dataSnapshot.exists() + " for key " + dataSnapshot.getKey());
-                boolean valExists = dataSnapshot.exists();
-                holder.mStar.setChecked(valExists);
-                if (valExists)
-                    holder.mActualPos = dataSnapshot.getValue(int.class);
-            }
+                    boolean valExists = dataSnapshot.exists();
+                    holder.mStar.setChecked(valExists);
+                    if (valExists)
+                        holder.mActualPos = dataSnapshot.getValue(int.class);
+                }
 
-            @Override
-            public void onCancelled(DatabaseError databaseError) {
+                @Override
+                public void onCancelled(DatabaseError databaseError) {
 
-            }
-        });
+                }
+            });
+        }
+        else {
+//            holder.mStar.setClickable(false);
+            holder.mStar.setEnabled(false);
+        }
     }
 
 //    void updateFavOnlyState(boolean onlyFav){
@@ -210,13 +257,17 @@ class MyMusicRecyclerViewAdapter extends RecyclerView.Adapter<MyMusicRecyclerVie
             @Override
             public void onClick(View v) {
 
+                if (!mIsLoggedIn){
+                    Log.i(LOG_TAG, "onClick: click without login");
+                    return;
+                }
                 CheckBox checkBox = (CheckBox) v;
                 boolean isChecked = checkBox.isChecked();
 //                Log.i(LOG_TAG, "onClickStar: Set to " + isChecked + " for the star at " + getAdapterPosition());
                 if (isChecked)
-                    mUser1Reference.child((String) mIdView.getText()).setValue(getAdapterPosition());
+                    mSpecificUserDataReference.child((String) mIdView.getText()).setValue(getAdapterPosition());
                 else
-                    mUser1Reference.child((String) mIdView.getText()).setValue(null);
+                    mSpecificUserDataReference.child((String) mIdView.getText()).setValue(null);
 
             }
         };
@@ -228,7 +279,7 @@ class MyMusicRecyclerViewAdapter extends RecyclerView.Adapter<MyMusicRecyclerVie
             mTitleView = (TextView) view.findViewById(R.id.music_title);
             mArtistView = (TextView) view.findViewById(R.id.music_artist);
             mButton = (ImageView) view.findViewById(R.id.button);
-            mStar = ((CheckBox) mView.findViewById(R.id.checkBox));
+            mStar = ((CheckBox) mView.findViewById(checkBox));
             mView.setOnClickListener(mainListener);
             mStar.setOnClickListener(starListener);
 //            if (mOnlyFav)

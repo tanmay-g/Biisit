@@ -11,6 +11,7 @@ import android.media.MediaPlayer;
 import android.net.Uri;
 import android.os.Bundle;
 import android.os.IBinder;
+import android.support.annotation.NonNull;
 import android.support.v4.app.Fragment;
 import android.support.v4.app.LoaderManager;
 import android.support.v4.content.CursorLoader;
@@ -34,6 +35,8 @@ import android.widget.MediaController;
 import android.widget.Spinner;
 import android.widget.Toast;
 
+import com.google.firebase.auth.FirebaseAuth;
+import com.google.firebase.auth.FirebaseUser;
 import com.google.firebase.database.DataSnapshot;
 import com.google.firebase.database.DatabaseError;
 import com.google.firebase.database.DatabaseReference;
@@ -99,13 +102,17 @@ public class MyMusicFragment extends Fragment
 
     private DatabaseReference mRootRef;
     private DatabaseReference mUserInfoReference;
-    private DatabaseReference mUser1Reference;
+    private DatabaseReference mSpecificUserDataReference;
     private static final String USER_INFO_KEY = "user_info";
-    private static final String USER_1_KEY = "user_1";
+//    private static final String USER_1_KEY = "user_1";
     private List<Integer> mFavouriteIds = null; // new ArrayList<>();
     private Spinner mSpinner;
     private int mSpinnerSelectedPos = -1;
     private ValueEventListener mUserValueEventListener;
+
+    private boolean mIsLoggedIn = false;
+    private String mUserId;
+    private FirebaseAuth.AuthStateListener mAuthListener;
 
     private class CustomMediaController extends MediaController{
 
@@ -171,6 +178,7 @@ public class MyMusicFragment extends Fragment
             getActivity().unbindService(mServiceConn);
             mServiceBound = false;
         }
+        mCurrentUri = null;
         mServiceMediaPlayer = null;
         mController.actuallyHide();
         playbackStopped();
@@ -185,7 +193,9 @@ public class MyMusicFragment extends Fragment
         unregisterBroadcastReceivers();
         if (mServiceBound)
             getActivity().unbindService(mServiceConn);
-        mUser1Reference.removeEventListener(mUserValueEventListener);
+        if (mSpecificUserDataReference != null)
+            mSpecificUserDataReference.removeEventListener(mUserValueEventListener);
+        FirebaseAuth.getInstance().removeAuthStateListener(mAuthListener);
     }
 
     private void registerBroadcastReceivers() {
@@ -221,6 +231,7 @@ public class MyMusicFragment extends Fragment
         DrawerLayout drawer = (DrawerLayout) getActivity().findViewById(R.id.drawer_layout);
         ActionBarDrawerToggle toggle = new ActionBarDrawerToggle(
                 getActivity(), drawer, toolbar, R.string.navigation_drawer_open, R.string.navigation_drawer_close);
+        //noinspection deprecation
         drawer.setDrawerListener(toggle);
         toggle.syncState();
 
@@ -231,21 +242,23 @@ public class MyMusicFragment extends Fragment
 
         mRootRef = FirebaseDatabase.getInstance().getReference();
         mUserInfoReference = mRootRef.child(USER_INFO_KEY);
-        mUser1Reference = mUserInfoReference.child(USER_1_KEY);
 
         mUserValueEventListener = new ValueEventListener() {
             @Override
             public void onDataChange(DataSnapshot dataSnapshot) {
-                Log.i(LOG_TAG, "onDataChange: UserData updated/listener's first call");
-                List<Integer> newFavouriteIds = new ArrayList<>();
-                for (DataSnapshot i : dataSnapshot.getChildren()){
-                    newFavouriteIds.add(Integer.valueOf(i.getKey()));
-                }
                 if (mOnlyFav){
-                    if (mFavouriteIds == null || mFavouriteIds.isEmpty() || !(mFavouriteIds.containsAll(newFavouriteIds) && newFavouriteIds.containsAll(mFavouriteIds))) {
+                    Log.i(LOG_TAG, "onDataChange: UserData updated/listener's first call");
+                    List<Integer> newFavouriteIds = new ArrayList<>();
+                    for (DataSnapshot i : dataSnapshot.getChildren()){
+                        newFavouriteIds.add(Integer.valueOf(i.getKey()));
+                    }
+
+                    if (newFavouriteIds.isEmpty())
+                        showEmptyView();
+                    else if (mFavouriteIds == null || !(mFavouriteIds.containsAll(newFavouriteIds) && newFavouriteIds.containsAll(mFavouriteIds))) {
                         mFavouriteIds = newFavouriteIds;
 //                    if (mOnlyFav || mFavouriteIds == null){
-                        Log.i(LOG_TAG, "onDataChange: fav actually changed or was null, so will restart loader");
+                        Log.i(LOG_TAG, "onDataChange: fav actually changed, so will restart loader");
                         restartCursorLoader();
 //                    }
                     }
@@ -260,6 +273,34 @@ public class MyMusicFragment extends Fragment
 
             }
         };
+
+        mAuthListener = new FirebaseAuth.AuthStateListener() {
+            @Override
+            public void onAuthStateChanged(@NonNull FirebaseAuth firebaseAuth) {
+                FirebaseUser user = firebaseAuth.getCurrentUser();
+                if (user != null) {
+                    // User is signed in
+                    mUserId = user.getUid();
+                    Log.d(LOG_TAG, "onAuthStateChanged:signed_in:" + mUserId);
+                    mIsLoggedIn = true;
+                    mSpecificUserDataReference = mUserInfoReference.child(mUserId);
+                    respondToSpinnerValueChanage();
+                } else {
+                    // User is signed out
+                    Log.d(LOG_TAG, "onAuthStateChanged:signed_out");
+                    if (mSpecificUserDataReference != null) {
+                        mSpecificUserDataReference.removeEventListener(mUserValueEventListener);
+                        mSpecificUserDataReference = null;
+                    }
+                    mIsLoggedIn = false;
+                    mFavouriteIds = null;
+                    if (mOnlyFav){
+                        showEmptyView();
+                    }
+                }
+            }
+        };
+        FirebaseAuth.getInstance().addAuthStateListener(mAuthListener);
 
 //        respondToSpinnerValueChanage();
 
@@ -282,22 +323,29 @@ public class MyMusicFragment extends Fragment
 
 
     private void respondToSpinnerValueChanage(){
-        sendServiceBroadcast(SERVICE_ACTION_STOP);
-        if (mOnlyFav) {
-            Log.i(LOG_TAG, "respondToSpinnerValueChanage: Adding permanent listener");
-            mUser1Reference.addValueEventListener(mUserValueEventListener);
+        if (mCurrentUri != null)
+            sendServiceBroadcast(SERVICE_ACTION_STOP);
+        if (mIsLoggedIn) {
+            if (mOnlyFav) {
+                Log.i(LOG_TAG, "respondToSpinnerValueChanage: Adding permanent listener");
+                if (mSpecificUserDataReference != null)
+                    mSpecificUserDataReference.addValueEventListener(mUserValueEventListener);
+                else
+                    showEmptyView();
+            } else {
+                if (mSpecificUserDataReference != null)
+                    mSpecificUserDataReference.removeEventListener(mUserValueEventListener);
+//                Log.i(LOG_TAG, "respondToSpinnerValueChanage: Adding one time listener");
+//                if (mSpecificUserDataReference != null)
+//                    mSpecificUserDataReference.addListenerForSingleValueEvent(mUserValueEventListener);
+                initCursorLoader();
+            }
         }
-        else {
-            Log.i(LOG_TAG, "respondToSpinnerValueChanage: Adding one time listener");
-            mUser1Reference.addListenerForSingleValueEvent(mUserValueEventListener);
-        }
-//            we don't expect fav list to have changed, but we do want to refresh ui
-//        so if it's not empty then we assume that data listener won't ask for a loader restart, so we just init it here
-//        but if it changed to fav, then it will ask for restart, so we shoulnd't do it here
-
-        if (!mOnlyFav) {// && mFavouriteIds != null && !mFavouriteIds.isEmpty())
+        else if (! mOnlyFav){
             initCursorLoader();
         }
+        else
+            showEmptyView();
     }
 
     @Override
@@ -319,7 +367,6 @@ public class MyMusicFragment extends Fragment
                         mSpinnerSelectedPos = position;
                         mOnlyFav = (position == 1);
 //                        Log.i(LOG_TAG, "onItemSelected: removing listener for User1Ref");
-                        mUser1Reference.removeEventListener(mUserValueEventListener);
                         respondToSpinnerValueChanage();
 //                        getActivity().getSupportLoaderManager().restartLoader(CURSOR_LOADER_ID_ALL, null, MyMusicFragment.this);
                     }
@@ -339,20 +386,23 @@ public class MyMusicFragment extends Fragment
 
     }
 
+    private void showEmptyView(){
+        //            TODO set empty view visible, and remove the below
+        if (mRecyclerView != null) {
+            mRecyclerViewAdapter = new MyMusicRecyclerViewAdapter(getActivity(), this, null, false);
+            mRecyclerView.setAdapter(mRecyclerViewAdapter);
+        }
+    }
+
     @Override
     public Loader<Cursor> onCreateLoader(int id, Bundle args) {
         Log.i(LOG_TAG, "onCreateLoader: For fav only?: " + mOnlyFav);
 
         switch (id) {
             case CURSOR_LOADER_ID_FAV:
-                if (mFavouriteIds.isEmpty()){
-                    Log.i(LOG_TAG, "onCreateLoader: No fav to show");
-//            TODO set empty view visible, and remove the below
-                        if (mRecyclerView != null) {
-                            mRecyclerViewAdapter = new MyMusicRecyclerViewAdapter(getActivity(), this, null, false);
-                            mRecyclerView.setAdapter(mRecyclerViewAdapter);
-                        }
-                        return null;
+                if (mFavouriteIds == null || mFavouriteIds.isEmpty()){
+                    Log.e(LOG_TAG, "onCreateLoader: Bad call to loader create!!!!!!!!!!!!!!!!");
+                    return null;
                 }
 //                Log.w(LOG_TAG, "onCreateLoader: " + mFavouriteIds.toString());
                 String whereStr = " _ID in (" + TextUtils.join(", ", Arrays.toString(mFavouriteIds.toArray()).split("[\\[\\]]")[1].split(", ")) + ")";
@@ -402,6 +452,7 @@ public class MyMusicFragment extends Fragment
         getActivity().sendBroadcast(intent);
     }
 
+    @SuppressWarnings("all")
     @Override
     public void onListFragmentInteraction(Uri mediaUri, boolean toStart, int position) {
 
