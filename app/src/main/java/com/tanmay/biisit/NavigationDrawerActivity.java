@@ -35,9 +35,13 @@ public class NavigationDrawerActivity extends AppCompatActivity
 
     private static final int RC_SIGN_IN = 111;
     private static final String LOG_TAG = NavigationDrawerActivity.class.getSimpleName();
+    private static final String MY_MUSIC_STATE_KEY = "MY_MUSIC_STATE_KEY";
+    private static final String SOUNDCLOUD_FRAGMENT_TAG = "SoundCloud";
+    private static final String MY_MUSIC_FRAGMENT_TAG = "MyMusic";
     NavigationView mNavigationView;
 
-    MyMusicFragment oldFragment;
+    MyMusicFragment myMusicFragment;
+    private Fragment.SavedState mMyMusicFragmentState;
 
 
     @Override
@@ -50,14 +54,26 @@ public class NavigationDrawerActivity extends AppCompatActivity
 
         if (savedInstanceState == null) {
             Log.i(LOG_TAG, "onCreate: null savedState");
-            oldFragment = new MyMusicFragment();
+            myMusicFragment = new MyMusicFragment();
             onNavigationItemSelected(mNavigationView.getMenu().getItem(0));
         }
         else {
             Log.i(LOG_TAG, "onCreate: Restoring from savedState");
-            oldFragment = (MyMusicFragment) getSupportFragmentManager().findFragmentByTag("MyMusic");
+            myMusicFragment = (MyMusicFragment) getSupportFragmentManager().findFragmentByTag(MY_MUSIC_STATE_KEY);
+//            myMusicFragment = (MyMusicFragment) getSupportFragmentManager().getFragment(savedInstanceState, MY_MUSIC_STATE_KEY);
+            if (myMusicFragment == null) {
+                myMusicFragment = new MyMusicFragment();
+                mMyMusicFragmentState = (Fragment.SavedState) savedInstanceState.getParcelable(MY_MUSIC_STATE_KEY);
+                myMusicFragment.setInitialSavedState(mMyMusicFragmentState);
+            }
         }
         updateUserDisplay();
+    }
+
+    @Override
+    protected void onSaveInstanceState(Bundle outState) {
+        super.onSaveInstanceState(outState);
+        outState.putParcelable(MY_MUSIC_STATE_KEY, mMyMusicFragmentState);
     }
 
     private void updateUserDisplay(){
@@ -127,17 +143,16 @@ public class NavigationDrawerActivity extends AppCompatActivity
 
         if (id == R.id.my_music) {
 //                MyMusicFragment fragment = new MyMusicFragment();
-//                getSupportFragmentManager().beginTransaction().replace(R.id.content_navigation_drawer, new MyMusicFragment(), "MyMusic").commit();
+//                getSupportFragmentManager().beginTransaction().replace(R.id.content_navigation_drawer, new MyMusicFragment(), MY_MUSIC_STATE_KEY).commit();
 //            }
 //            else {
-                getSupportFragmentManager().beginTransaction().replace(R.id.content_navigation_drawer, oldFragment, "MyMusic").commit();
+                getSupportFragmentManager().beginTransaction().replace(R.id.content_navigation_drawer, myMusicFragment, MY_MUSIC_FRAGMENT_TAG).commit();
 //            }
         } else if (id == R.id.soundcloud) {
-            getSupportFragmentManager().beginTransaction().replace(R.id.content_navigation_drawer, new Fragment()).commit();
-
+            mMyMusicFragmentState = getSupportFragmentManager().saveFragmentInstanceState(myMusicFragment);
+            getSupportFragmentManager().beginTransaction().replace(R.id.content_navigation_drawer, new Fragment(), SOUNDCLOUD_FRAGMENT_TAG).commit();
         } else if (id == R.id.sign_in_out) {
             accountStuff = true;
-//            getSupportFragmentManager().beginTransaction().replace(R.id.content_navigation_drawer, new Fragment()).commit();
             if (FirebaseAuth.getInstance().getCurrentUser() != null) {
                 AuthUI.getInstance()
                         .signOut(this)

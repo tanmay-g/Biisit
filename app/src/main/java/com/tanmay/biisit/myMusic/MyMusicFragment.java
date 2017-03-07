@@ -62,7 +62,6 @@ import static com.tanmay.biisit.MediaPlayerService.SERVICE_ACTION_PAUSE;
 import static com.tanmay.biisit.MediaPlayerService.SERVICE_ACTION_RESUME;
 import static com.tanmay.biisit.MediaPlayerService.SERVICE_ACTION_SEEK;
 import static com.tanmay.biisit.MediaPlayerService.SERVICE_ACTION_START_PLAY;
-import static com.tanmay.biisit.MediaPlayerService.SERVICE_ACTION_STOP;
 
 /**
  * A fragment representing a list of Items.
@@ -75,20 +74,18 @@ public class MyMusicFragment extends Fragment
 
     public static final int MY_MUSIC_FRAGMENT_CLIENT_ID = 101;
     private static final String LOG_TAG = MyMusicFragment.class.getSimpleName();
-//    private OnListFragmentInteractionListener mListener;
     private static final int CURSOR_LOADER_ID_ALL = 1;
     private static final int CURSOR_LOADER_ID_FAV = 2;
+    private static final String SPINNER_SELECTED_KEY = "SPINNER_SELECTED_KEY";
+    private static final String SELECTED_POS_KEY = "SELECTED_POS_KEY";
+    private static final String CURRENT_URI_KEY = "CURRENT_URI_KEY";
+    private static final String IS_PLAYING_KEY = "IS_PLAYING_KEY";
+    private static final String FAV_ID_KEY = "FAV_ID_KEY";
 
-//    private MediaSessionCompat mMediaSession;
-//    private PlaybackStateCompat.Builder mStateBuilder;
-
-//    private MediaPlayerService player;
     private boolean mServiceBound = false;
-    //    private static final String ARG_COLUMN_COUNT = "column-count";
-//    private int mColumnCount = 1;
     private RecyclerView mRecyclerView;
     private Uri mCurrentUri = null;
-//    private Uri mLastPlayedUri = null;
+
     private MyMusicRecyclerViewAdapter mRecyclerViewAdapter = null;
     private MyMusicFragmentReceiver mMusicFragmentReceiver = new MyMusicFragmentReceiver();
 
@@ -96,7 +93,7 @@ public class MyMusicFragment extends Fragment
 
     private ServiceConnection mServiceConn;
     private MediaPlayer mServiceMediaPlayer = null;
-    private int mLastSelectedPos;
+    private int mLastSelectedPos = -1;
 
     private boolean mOnlyFav = false;
 
@@ -104,8 +101,7 @@ public class MyMusicFragment extends Fragment
     private DatabaseReference mUserInfoReference;
     private DatabaseReference mSpecificUserDataReference;
     private static final String USER_INFO_KEY = "user_info";
-//    private static final String USER_1_KEY = "user_1";
-    private List<Integer> mFavouriteIds = null; // new ArrayList<>();
+    private List<Integer> mFavouriteIds = null;
     private Spinner mSpinner;
     private int mSpinnerSelectedPos = -1;
     private ValueEventListener mUserValueEventListener;
@@ -113,6 +109,7 @@ public class MyMusicFragment extends Fragment
     private boolean mIsLoggedIn = false;
     private String mUserId;
     private FirebaseAuth.AuthStateListener mAuthListener;
+    private boolean mIsPlaying = false;
 
     private class CustomMediaController extends MediaController{
 
@@ -192,11 +189,28 @@ public class MyMusicFragment extends Fragment
         if (mController != null)
             mController.actuallyHide();
         unregisterBroadcastReceivers();
-        if (mServiceBound)
-            getActivity().unbindService(mServiceConn);
+        try {
+            if (mServiceBound)
+                getActivity().unbindService(mServiceConn);
+
+
+        } catch (IllegalArgumentException i){
+            Log.d(LOG_TAG, "onDestroy: Was actually not bound");
+        }
+        mServiceBound = false;
         if (mSpecificUserDataReference != null)
             mSpecificUserDataReference.removeEventListener(mUserValueEventListener);
         FirebaseAuth.getInstance().removeAuthStateListener(mAuthListener);
+    }
+
+    @Override
+    public void onSaveInstanceState(Bundle outState) {
+        super.onSaveInstanceState(outState);
+        outState.putInt(SPINNER_SELECTED_KEY, mSpinnerSelectedPos);
+        outState.putInt(SELECTED_POS_KEY, mLastSelectedPos);
+        outState.putParcelable(CURRENT_URI_KEY, mCurrentUri);
+        outState.putBoolean(IS_PLAYING_KEY, mIsPlaying);
+        outState.putIntegerArrayList(FAV_ID_KEY, (ArrayList<Integer>) mFavouriteIds);
     }
 
     private void registerBroadcastReceivers() {
@@ -213,8 +227,8 @@ public class MyMusicFragment extends Fragment
     @Override
     public View onCreateView(LayoutInflater inflater, ViewGroup container,
                              Bundle savedInstanceState) {
+        Log.i(LOG_TAG, "onCreateView");
         View view = inflater.inflate(R.layout.fragment_mymusic, container, false);
-
         // Set the adapter
         mRecyclerView = (RecyclerView) view.findViewById(R.id.recyclerView);
         if (mRecyclerView != null) {
@@ -303,7 +317,15 @@ public class MyMusicFragment extends Fragment
         };
         FirebaseAuth.getInstance().addAuthStateListener(mAuthListener);
 
-//        respondToSpinnerValueChanage();
+        if (savedInstanceState != null){
+            Log.i(LOG_TAG, "onCreateView: Restoring from saved state");
+            mSpinnerSelectedPos = savedInstanceState.getInt(SPINNER_SELECTED_KEY);
+            mLastSelectedPos = savedInstanceState.getInt(SELECTED_POS_KEY);
+            mCurrentUri = savedInstanceState.getParcelable(CURRENT_URI_KEY);
+            mIsPlaying = savedInstanceState.getBoolean(IS_PLAYING_KEY);
+            mFavouriteIds = savedInstanceState.getIntegerArrayList(FAV_ID_KEY);
+//            respondToSpinnerValueChanage();
+        }
 
         return view;
     }
@@ -324,8 +346,9 @@ public class MyMusicFragment extends Fragment
 
 
     private void respondToSpinnerValueChanage(){
-        if (mCurrentUri != null)
-            sendServiceBroadcast(SERVICE_ACTION_STOP);
+//        if (mCurrentUri != null)
+//            mController.show();
+//            sendServiceBroadcast(SERVICE_ACTION_STOP);
         if (mIsLoggedIn) {
             if (mOnlyFav) {
 //                Log.i(LOG_TAG, "respondToSpinnerValueChanage: Adding permanent listener");
@@ -351,6 +374,7 @@ public class MyMusicFragment extends Fragment
 
     @Override
     public void onCreateOptionsMenu(Menu menu, MenuInflater inflater) {
+        Log.i(LOG_TAG, "onCreateOptionsMenu");
         super.onCreateOptionsMenu(menu, inflater);
         inflater.inflate(R.menu.mymusic_fragment_menu, menu);
         mSpinner = (Spinner) (menu.findItem(R.id.favourites_spinner_menu_item).getActionView());
@@ -363,14 +387,14 @@ public class MyMusicFragment extends Fragment
             mSpinner.setOnItemSelectedListener(new AdapterView.OnItemSelectedListener() {
                 @Override
                 public void onItemSelected(AdapterView<?> adapterView, View view, int position, long id) {
-                    if (mSpinnerSelectedPos != position) {
-//                        Log.i(LOG_TAG, "onItemSelected: spinner was selected with new pos " + position);
+//                    if (mSpinnerSelectedPos != position) {
+                        Log.i(LOG_TAG, "onItemSelected: spinner was selected with new pos " + position);
                         mSpinnerSelectedPos = position;
                         mOnlyFav = (position == 1);
 //                        Log.i(LOG_TAG, "onItemSelected: removing listener for User1Ref");
                         respondToSpinnerValueChanage();
 //                        getActivity().getSupportLoaderManager().restartLoader(CURSOR_LOADER_ID_ALL, null, MyMusicFragment.this);
-                    }
+//                    }
                 }
 
                 @Override
@@ -424,6 +448,9 @@ public class MyMusicFragment extends Fragment
         if (mRecyclerView != null) {
             mRecyclerViewAdapter = new MyMusicRecyclerViewAdapter(getActivity(), this, data, mOnlyFav);
             mRecyclerView.setAdapter(mRecyclerViewAdapter);
+            if (mIsPlaying && mLastSelectedPos != -1){
+                playbackStarted(mLastSelectedPos);
+            }
         }
         else
             Log.w(LOG_TAG, "onLoadFinished: not setting adapter as recycler view was not set" );
@@ -458,6 +485,7 @@ public class MyMusicFragment extends Fragment
     public void onListFragmentInteraction(Uri mediaUri, boolean toStart, int position) {
 
         mLastSelectedPos = position;
+        mIsPlaying = toStart;
 
         boolean sameAsCurrent = mediaUri.equals(mCurrentUri);
         if (!sameAsCurrent && !toStart ) {
@@ -502,10 +530,12 @@ public class MyMusicFragment extends Fragment
     private void playbackStopped() {
         Toast.makeText(getActivity(), "Playback stopped", Toast.LENGTH_SHORT).show();
         mRecyclerViewAdapter.deselectCurrentItem();
+        mIsPlaying = false;
     }
     private void playbackStarted(int pos) {
         Toast.makeText(getActivity(), "Playback started at " + pos, Toast.LENGTH_SHORT).show();
         mRecyclerViewAdapter.selectItem(pos);
+        mIsPlaying = true;
         Uri newUri = mRecyclerViewAdapter.getUriAtPos(pos);
         if (!newUri.equals(mCurrentUri))
             mCurrentUri = newUri;
