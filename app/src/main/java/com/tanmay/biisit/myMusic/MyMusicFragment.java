@@ -163,6 +163,7 @@ public class MyMusicFragment extends Fragment
             }
         };
         setHasOptionsMenu(true);
+//        setRetainInstance(true);
         startServiceIfDown();
     }
 
@@ -258,7 +259,7 @@ public class MyMusicFragment extends Fragment
                     else if (mFavouriteIds == null || !(mFavouriteIds.containsAll(newFavouriteIds) && newFavouriteIds.containsAll(mFavouriteIds))) {
                         mFavouriteIds = newFavouriteIds;
 //                    if (mOnlyFav || mFavouriteIds == null){
-                        Log.i(LOG_TAG, "onDataChange: fav actually changed, so will restart loader");
+//                        Log.i(LOG_TAG, "onDataChange: fav actually changed, so will restart loader");
                         restartCursorLoader();
 //                    }
                     }
@@ -281,13 +282,13 @@ public class MyMusicFragment extends Fragment
                 if (user != null) {
                     // User is signed in
                     mUserId = user.getUid();
-                    Log.d(LOG_TAG, "onAuthStateChanged:signed_in:" + mUserId);
+//                    Log.d(LOG_TAG, "onAuthStateChanged:signed_in:" + mUserId);
                     mIsLoggedIn = true;
                     mSpecificUserDataReference = mUserInfoReference.child(mUserId);
                     respondToSpinnerValueChanage();
                 } else {
                     // User is signed out
-                    Log.d(LOG_TAG, "onAuthStateChanged:signed_out");
+//                    Log.d(LOG_TAG, "onAuthStateChanged:signed_out");
                     if (mSpecificUserDataReference != null) {
                         mSpecificUserDataReference.removeEventListener(mUserValueEventListener);
                         mSpecificUserDataReference = null;
@@ -327,7 +328,7 @@ public class MyMusicFragment extends Fragment
             sendServiceBroadcast(SERVICE_ACTION_STOP);
         if (mIsLoggedIn) {
             if (mOnlyFav) {
-                Log.i(LOG_TAG, "respondToSpinnerValueChanage: Adding permanent listener");
+//                Log.i(LOG_TAG, "respondToSpinnerValueChanage: Adding permanent listener");
                 if (mSpecificUserDataReference != null)
                     mSpecificUserDataReference.addValueEventListener(mUserValueEventListener);
                 else
@@ -363,7 +364,7 @@ public class MyMusicFragment extends Fragment
                 @Override
                 public void onItemSelected(AdapterView<?> adapterView, View view, int position, long id) {
                     if (mSpinnerSelectedPos != position) {
-                        Log.i(LOG_TAG, "onItemSelected: spinner was selected with new pos " + position);
+//                        Log.i(LOG_TAG, "onItemSelected: spinner was selected with new pos " + position);
                         mSpinnerSelectedPos = position;
                         mOnlyFav = (position == 1);
 //                        Log.i(LOG_TAG, "onItemSelected: removing listener for User1Ref");
@@ -592,7 +593,7 @@ public class MyMusicFragment extends Fragment
 
             if (intent.getAction().equals(ACTION_PLAY)){
                 int itemPosToSelect = extras.getInt(BROADCAST_RESUMED_ITEM_POS_KEY);
-                Log.i(LOG_TAG, "onReceive: Got item to select as " + itemPosToSelect);
+//                Log.i(LOG_TAG, "onReceive: Got item to select as " + itemPosToSelect);
                 playbackStarted(itemPosToSelect);
                 refreshOrBind();
 //                mRecyclerView.getChildAt(itemPosToSelect)

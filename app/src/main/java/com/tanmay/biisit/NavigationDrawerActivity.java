@@ -14,6 +14,7 @@ import android.support.v4.content.ContextCompat;
 import android.support.v4.view.GravityCompat;
 import android.support.v4.widget.DrawerLayout;
 import android.support.v7.app.AppCompatActivity;
+import android.util.Log;
 import android.view.MenuItem;
 import android.view.View;
 import android.widget.TextView;
@@ -33,26 +34,28 @@ public class NavigationDrawerActivity extends AppCompatActivity
         implements NavigationView.OnNavigationItemSelectedListener {
 
     private static final int RC_SIGN_IN = 111;
+    private static final String LOG_TAG = NavigationDrawerActivity.class.getSimpleName();
     NavigationView mNavigationView;
+
+    MyMusicFragment oldFragment;
+
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_navigation_drawer);
 
-//        Toolbar toolbar = (Toolbar) findViewById(R.id.toolbar);
-//        setSupportActionBar(toolbar);
-//        DrawerLayout drawer = (DrawerLayout) findViewById(R.id.drawer_layout);
-//        ActionBarDrawerToggle toggle = new ActionBarDrawerToggle(
-//                this, drawer, toolbar, R.string.navigation_drawer_open, R.string.navigation_drawer_close);
-//        drawer.setDrawerListener(toggle);
-//        toggle.syncState();
-
         mNavigationView = (NavigationView) findViewById(R.id.nav_view);
         mNavigationView.setNavigationItemSelectedListener(this);
+
         if (savedInstanceState == null) {
-//            getSupportFragmentManager().beginTransaction().replace(R.id.content_navigation_drawer, new MyMusicFragment()).commit();
+            Log.i(LOG_TAG, "onCreate: null savedState");
+            oldFragment = new MyMusicFragment();
             onNavigationItemSelected(mNavigationView.getMenu().getItem(0));
+        }
+        else {
+            Log.i(LOG_TAG, "onCreate: Restoring from savedState");
+            oldFragment = (MyMusicFragment) getSupportFragmentManager().findFragmentByTag("MyMusic");
         }
         updateUserDisplay();
     }
@@ -98,6 +101,7 @@ public class NavigationDrawerActivity extends AppCompatActivity
 
         boolean accountStuff = false;
 
+        //remove this check?
         if (ContextCompat.checkSelfPermission(this,
                 Manifest.permission.READ_EXTERNAL_STORAGE)
                 != PackageManager.PERMISSION_GRANTED) {
@@ -111,16 +115,10 @@ public class NavigationDrawerActivity extends AppCompatActivity
                 // sees the explanation, try again to request the permission.
 
             } else {
-
                 // No explanation needed, we can request the permission.
-
                 ActivityCompat.requestPermissions(this,
                         new String[]{Manifest.permission.READ_EXTERNAL_STORAGE},
                         1);
-
-                // MY_PERMISSIONS_REQUEST_READ_CONTACTS is an
-                // app-defined int constant. The callback method gets the
-                // result of the request.
             }
         }
 
@@ -128,7 +126,12 @@ public class NavigationDrawerActivity extends AppCompatActivity
         int id = item.getItemId();
 
         if (id == R.id.my_music) {
-            getSupportFragmentManager().beginTransaction().replace(R.id.content_navigation_drawer, new MyMusicFragment()).commit();
+//                MyMusicFragment fragment = new MyMusicFragment();
+//                getSupportFragmentManager().beginTransaction().replace(R.id.content_navigation_drawer, new MyMusicFragment(), "MyMusic").commit();
+//            }
+//            else {
+                getSupportFragmentManager().beginTransaction().replace(R.id.content_navigation_drawer, oldFragment, "MyMusic").commit();
+//            }
         } else if (id == R.id.soundcloud) {
             getSupportFragmentManager().beginTransaction().replace(R.id.content_navigation_drawer, new Fragment()).commit();
 
@@ -170,9 +173,6 @@ public class NavigationDrawerActivity extends AppCompatActivity
         }
         else {
             return false;
-//            item.setChecked(false);
-//            mNavigationView.getMenu().getItem(0).setChecked(true);
-//            mNavigationView.setCheckedItem(mNavigationView.getMenu().getItem(0).getItemId());
         }
 
         return true;

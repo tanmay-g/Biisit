@@ -357,14 +357,14 @@ public class MediaPlayerService extends Service implements MediaPlayer.OnComplet
             // DO Inform current player about this to update UI
             @Override
             public void onPlay() {
-                Log.i(LOG_TAG, "onPlay in mediaSessionCallback");
+//                Log.i(LOG_TAG, "onPlay in mediaSessionCallback");
                 super.onPlay();
                 resumeMedia();
             }
 
             @Override
             public void onPause() {
-                Log.i(LOG_TAG, "onPause in mediaSessionCallback");
+//                Log.i(LOG_TAG, "onPause in mediaSessionCallback");
                 super.onPause();
                 pauseMedia();
 
@@ -373,13 +373,13 @@ public class MediaPlayerService extends Service implements MediaPlayer.OnComplet
             @Override
             public void onStop() {
                 super.onStop();
-                Log.i(LOG_TAG, "onStop in mediaSessionCallback");
+//                Log.i(LOG_TAG, "onStop in mediaSessionCallback");
                 stopMedia();
             }
 
             @Override
             public void onSeekTo(long position) {
-                Log.i(LOG_TAG, "seekTo in mediaSessionCallback");
+//                Log.i(LOG_TAG, "seekTo in mediaSessionCallback");
                 super.onSeekTo(position);
             }
         });
@@ -491,7 +491,7 @@ public class MediaPlayerService extends Service implements MediaPlayer.OnComplet
     public class MediaPlayerServiceReceiver extends BroadcastReceiver {
 
         public MediaPlayerServiceReceiver() {
-            Log.i(LOG_TAG, "MediaPlayerServiceReceiver: Created");
+//            Log.i(LOG_TAG, "MediaPlayerServiceReceiver: Created");
         }
 
         @Override

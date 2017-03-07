@@ -7,7 +7,6 @@ import android.net.Uri;
 import android.provider.MediaStore;
 import android.support.annotation.NonNull;
 import android.support.v7.widget.RecyclerView;
-import android.util.Log;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
@@ -97,12 +96,12 @@ class MyMusicRecyclerViewAdapter extends RecyclerView.Adapter<MyMusicRecyclerVie
                 if (user != null) {
                     // User is signed in
                     mUserId = user.getUid();
-                    Log.d(LOG_TAG, "onAuthStateChanged:signed_in:" + mUserId);
+//                    Log.d(LOG_TAG, "onAuthStateChanged:signed_in:" + mUserId);
                     mIsLoggedIn = true;
                     mSpecificUserDataReference = mUserInfoReference.child(mUserId);
                 } else {
                     // User is signed out
-                    Log.d(LOG_TAG, "onAuthStateChanged:signed_out");
+//                    Log.d(LOG_TAG, "onAuthStateChanged:signed_out");
                     mSpecificUserDataReference = null;
                     mIsLoggedIn = false;
                 }
@@ -223,7 +222,7 @@ class MyMusicRecyclerViewAdapter extends RecyclerView.Adapter<MyMusicRecyclerVie
             public void onClick(View v) {
                 int adapterPosition = getAdapterPosition();
                 mValues.moveToPosition(adapterPosition);
-                Log.i(LOG_TAG, "onClick: position " + adapterPosition);
+//                Log.i(LOG_TAG, "onClick: position " + adapterPosition);
                 boolean isAlreadyRunning = mView.isSelected();
                 unSelectSelectedView();
                 if (!isAlreadyRunning){
@@ -258,7 +257,7 @@ class MyMusicRecyclerViewAdapter extends RecyclerView.Adapter<MyMusicRecyclerVie
             public void onClick(View v) {
 
                 if (!mIsLoggedIn){
-                    Log.i(LOG_TAG, "onClick: click without login");
+//                    Log.i(LOG_TAG, "onClick: click without login");
                     return;
                 }
                 CheckBox checkBox = (CheckBox) v;
