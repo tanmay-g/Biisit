@@ -29,6 +29,7 @@ import com.google.android.gms.tasks.Task;
 import com.google.firebase.auth.FirebaseAuth;
 import com.google.firebase.auth.FirebaseUser;
 import com.tanmay.biisit.myMusic.MyMusicFragment;
+import com.tanmay.biisit.soundCloud.SoundCloudFragment;
 
 public class NavigationDrawerActivity extends AppCompatActivity
         implements NavigationView.OnNavigationItemSelectedListener {
@@ -36,12 +37,16 @@ public class NavigationDrawerActivity extends AppCompatActivity
     private static final int RC_SIGN_IN = 111;
     private static final String LOG_TAG = NavigationDrawerActivity.class.getSimpleName();
     private static final String MY_MUSIC_STATE_KEY = "MY_MUSIC_STATE_KEY";
+    private static final String SOUNDCLOUD_STATE_KEY = "SOUNDCLOUD_STATE_KEY";
     private static final String SOUNDCLOUD_FRAGMENT_TAG = "SoundCloud";
     private static final String MY_MUSIC_FRAGMENT_TAG = "MyMusic";
     NavigationView mNavigationView;
 
-    MyMusicFragment myMusicFragment;
+    MyMusicFragment mMyMusicFragment;
     private Fragment.SavedState mMyMusicFragmentState;
+
+    SoundCloudFragment mSoundCloudFragment;
+    private Fragment.SavedState mSoundCloudFragmentState;
 
 
     @Override
@@ -54,17 +59,24 @@ public class NavigationDrawerActivity extends AppCompatActivity
 
         if (savedInstanceState == null) {
             Log.i(LOG_TAG, "onCreate: null savedState");
-            myMusicFragment = new MyMusicFragment();
+            mMyMusicFragment = new MyMusicFragment();
+            mSoundCloudFragment = new SoundCloudFragment();
             onNavigationItemSelected(mNavigationView.getMenu().getItem(0));
         }
         else {
             Log.i(LOG_TAG, "onCreate: Restoring from savedState");
-            myMusicFragment = (MyMusicFragment) getSupportFragmentManager().findFragmentByTag(MY_MUSIC_STATE_KEY);
-//            myMusicFragment = (MyMusicFragment) getSupportFragmentManager().getFragment(savedInstanceState, MY_MUSIC_STATE_KEY);
-            if (myMusicFragment == null) {
-                myMusicFragment = new MyMusicFragment();
+            mMyMusicFragment = (MyMusicFragment) getSupportFragmentManager().findFragmentByTag(MY_MUSIC_FRAGMENT_TAG);
+            mSoundCloudFragment = (SoundCloudFragment) getSupportFragmentManager().findFragmentByTag(SOUNDCLOUD_FRAGMENT_TAG);
+//            mMyMusicFragment = (MyMusicFragment) getSupportFragmentManager().getFragment(savedInstanceState, MY_MUSIC_STATE_KEY);
+            if (mMyMusicFragment == null) {
+                mMyMusicFragment = new MyMusicFragment();
                 mMyMusicFragmentState = (Fragment.SavedState) savedInstanceState.getParcelable(MY_MUSIC_STATE_KEY);
-                myMusicFragment.setInitialSavedState(mMyMusicFragmentState);
+                mMyMusicFragment.setInitialSavedState(mMyMusicFragmentState);
+            }
+            if (mSoundCloudFragment == null) {
+                mSoundCloudFragment = new SoundCloudFragment();
+                mSoundCloudFragmentState = (Fragment.SavedState) savedInstanceState.getParcelable(SOUNDCLOUD_STATE_KEY);
+                mSoundCloudFragment.setInitialSavedState(mSoundCloudFragmentState);
             }
         }
         updateUserDisplay();
@@ -74,6 +86,7 @@ public class NavigationDrawerActivity extends AppCompatActivity
     protected void onSaveInstanceState(Bundle outState) {
         super.onSaveInstanceState(outState);
         outState.putParcelable(MY_MUSIC_STATE_KEY, mMyMusicFragmentState);
+        outState.putParcelable(SOUNDCLOUD_STATE_KEY, mSoundCloudFragmentState);
     }
 
     private void updateUserDisplay(){
@@ -146,11 +159,22 @@ public class NavigationDrawerActivity extends AppCompatActivity
 //                getSupportFragmentManager().beginTransaction().replace(R.id.content_navigation_drawer, new MyMusicFragment(), MY_MUSIC_STATE_KEY).commit();
 //            }
 //            else {
-                getSupportFragmentManager().beginTransaction().replace(R.id.content_navigation_drawer, myMusicFragment, MY_MUSIC_FRAGMENT_TAG).commit();
+            try {
+
+                mSoundCloudFragmentState = getSupportFragmentManager().saveFragmentInstanceState(mSoundCloudFragment);
+            }catch (IllegalStateException i){
+
+            }
+            getSupportFragmentManager().beginTransaction().replace(R.id.content_navigation_drawer, mMyMusicFragment, MY_MUSIC_FRAGMENT_TAG).commit();
 //            }
         } else if (id == R.id.soundcloud) {
-            mMyMusicFragmentState = getSupportFragmentManager().saveFragmentInstanceState(myMusicFragment);
-            getSupportFragmentManager().beginTransaction().replace(R.id.content_navigation_drawer, new Fragment(), SOUNDCLOUD_FRAGMENT_TAG).commit();
+            try {
+                mMyMusicFragmentState = getSupportFragmentManager().saveFragmentInstanceState(mMyMusicFragment);
+            }
+            catch (IllegalStateException i){
+
+            }
+            getSupportFragmentManager().beginTransaction().replace(R.id.content_navigation_drawer, mSoundCloudFragment, SOUNDCLOUD_FRAGMENT_TAG).commit();
         } else if (id == R.id.sign_in_out) {
             accountStuff = true;
             if (FirebaseAuth.getInstance().getCurrentUser() != null) {
