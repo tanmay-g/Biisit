@@ -1,6 +1,7 @@
 package com.tanmay.biisit;
 
 import android.Manifest;
+import android.app.SearchManager;
 import android.content.Intent;
 import android.content.pm.PackageManager;
 import android.os.Bundle;
@@ -79,7 +80,25 @@ public class NavigationDrawerActivity extends AppCompatActivity
                 mSoundCloudFragment.setInitialSavedState(mSoundCloudFragmentState);
             }
         }
+        if (getIntent() != null)
+            handleIntent(getIntent());
         updateUserDisplay();
+    }
+
+    @Override
+    protected void onNewIntent(Intent intent) {
+        super.onNewIntent(intent);
+        handleIntent(intent);
+    }
+
+    private void handleIntent(Intent intent) {
+        if (Intent.ACTION_SEARCH.equals(intent.getAction())) {
+            Log.i(LOG_TAG, "handleIntent: SEARCH intent got");
+            String query = intent.getStringExtra(SearchManager.QUERY);
+            if (mSoundCloudFragment != null){
+                mSoundCloudFragment.handleSearch(query);
+            }
+        }
     }
 
     @Override

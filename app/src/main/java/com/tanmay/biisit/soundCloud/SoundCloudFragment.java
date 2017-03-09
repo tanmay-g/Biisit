@@ -1,5 +1,6 @@
 package com.tanmay.biisit.soundCloud;
 
+import android.app.SearchManager;
 import android.content.BroadcastReceiver;
 import android.content.ComponentName;
 import android.content.Context;
@@ -21,7 +22,9 @@ import android.util.Log;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
+import android.widget.ArrayAdapter;
 import android.widget.MediaController;
+import android.widget.SearchView;
 import android.widget.Spinner;
 import android.widget.Toast;
 
@@ -52,7 +55,10 @@ public class SoundCloudFragment extends Fragment
         SoundCloudRecyclerViewAdapter.OnListFragmentInteractionListener,
         MediaController.MediaPlayerControl {
 
-    public static final int MY_MUSIC_FRAGMENT_CLIENT_ID = 101;
+    public static final String CLIENT_ID = "YOUR_CLIENT_ID";
+    public static final String API_URL = "https://api.soundcloud.com";
+
+    public static final int SOUNDCLOUD_FRAGMENT_CLIENT_ID = 102;
     private static final String LOG_TAG = SoundCloudFragment.class.getSimpleName();
     private static final String SPINNER_SELECTED_KEY = "SPINNER_SELECTED_KEY";
     private static final String SELECTED_POS_KEY = "SELECTED_POS_KEY";
@@ -204,6 +210,21 @@ public class SoundCloudFragment extends Fragment
 //            respondToSpinnerValueChanage();
         }
 
+        mSpinner = (Spinner) view.findViewById(R.id.search_type_spinner);
+        ArrayAdapter<CharSequence> spinnerAdapter = ArrayAdapter.createFromResource(getActivity(),
+                R.array.search_spinner_choices,
+                R.layout.custom_spinner_item);
+        spinnerAdapter.setDropDownViewResource(R.layout.custom_spinner_dropdown_item);
+        mSpinner.setAdapter(spinnerAdapter);
+
+        // Get the SearchView and set the searchable configuration
+        SearchManager searchManager = (SearchManager) getActivity().getSystemService(Context.SEARCH_SERVICE);
+        SearchView searchView = (SearchView) view.findViewById(R.id.search_view);
+        // Assumes current activity is the searchable activity
+        searchView.setSearchableInfo(searchManager.getSearchableInfo(getActivity().getComponentName()));
+        searchView.setIconifiedByDefault(false); // Do not iconify the widget; expand it by default
+
+
         return view;
     }
 
@@ -231,7 +252,7 @@ public class SoundCloudFragment extends Fragment
         Intent intent = new Intent();
 //        Intent intent = new Intent(getActivity(), MediaPlayerService.class.getCanonicalName());
         intent.setAction(action);
-        intent.putExtra(BROADCAST_CLIENT_ID_KEY, MY_MUSIC_FRAGMENT_CLIENT_ID);
+        intent.putExtra(BROADCAST_CLIENT_ID_KEY, SOUNDCLOUD_FRAGMENT_CLIENT_ID);
         intent.putExtra(BROADCAST_CLIENT_ITEM_POS_KEY, selectionPosition);
         intent.putExtra(BROADCAST_MEDIA_URI_KEY, mCurrentUri);
         intent.putExtra(BROADCAST_SEEK_POSITION_KEY, resumePosition);
@@ -354,13 +375,17 @@ public class SoundCloudFragment extends Fragment
         return -1;
     }
 
+    public void handleSearch(String query) {
+        Log.i(LOG_TAG, "handleSearch: Got query" + query);
+    }
+
     public class SoundCloudFragmentReceiver extends BroadcastReceiver {
 
         @Override
         public void onReceive(Context context, Intent intent) {
             Log.i(LOG_TAG, "onReceive: " + intent.getAction());
             Bundle extras = intent.getExtras();
-            if (extras.getInt(BROADCAST_CLIENT_ID_KEY, -1) != MY_MUSIC_FRAGMENT_CLIENT_ID)
+            if (extras.getInt(BROADCAST_CLIENT_ID_KEY, -1) != SOUNDCLOUD_FRAGMENT_CLIENT_ID)
                 return;
 
             if (intent.getAction().equals(ACTION_PLAY)){

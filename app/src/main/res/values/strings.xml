@@ -5,10 +5,15 @@
     <string name="navigation_drawer_close">Close navigation drawer</string>
 
     <string name="favourites_spinner_title">Display favourites?</string>
+    <string name="search_hint">Search SoundCloud</string>
 
     <string-array name="favourites_spinner_choices">
         <item>All My Music</item>
         <item>Only Favourites</item>
+    </string-array>
+    <string-array name="search_spinner_choices">
+        <item>Keyword</item>
+        <item>Tag</item>
     </string-array>
     <!--<string-array name="sort_spinner_choice_values">-->
         <!--<item>all</item>-->
