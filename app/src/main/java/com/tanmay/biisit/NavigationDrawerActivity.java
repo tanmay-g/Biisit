@@ -278,7 +278,7 @@ public class NavigationDrawerActivity extends AppCompatActivity
     }
 
     @MainThread
-    private void showSnackbar(String errorMessageRes) {
+    public void showSnackbar(String errorMessageRes) {
         Snackbar.make(findViewById(R.id.drawer_layout), errorMessageRes, Snackbar.LENGTH_LONG).show();
     }
 }
