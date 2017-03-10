@@ -10,6 +10,7 @@ import android.content.IntentFilter;
 import android.content.ServiceConnection;
 import android.media.MediaPlayer;
 import android.net.Uri;
+import android.os.AsyncTask;
 import android.os.Bundle;
 import android.os.IBinder;
 import android.support.v4.app.Fragment;
@@ -35,10 +36,9 @@ import com.tanmay.biisit.NavigationDrawerActivity;
 import com.tanmay.biisit.R;
 import com.tanmay.biisit.soundCloud.pojo.Track;
 
+import java.io.IOException;
 import java.util.List;
 
-import retrofit2.Call;
-import retrofit2.Callback;
 import retrofit2.Response;
 
 import static com.tanmay.biisit.MediaPlayerService.ACTION_PAUSE;
@@ -73,7 +73,6 @@ public class SoundCloudFragment extends Fragment
     private static final String SELECTED_POS_KEY = "SELECTED_POS_KEY";
     private static final String CURRENT_URI_KEY = "CURRENT_URI_KEY";
     private static final String IS_PLAYING_KEY = "IS_PLAYING_KEY";
-    Callback<List<Track>> mSearchCallback;
     private boolean mServiceBound = false;
     private RecyclerView mRecyclerView;
     private Uri mCurrentUri = null;
@@ -86,7 +85,6 @@ public class SoundCloudFragment extends Fragment
     private Spinner mSpinner;
     private int mSpinnerSelectedPos = -1;
     private boolean mIsPlaying = false;
-    private ProgressDialog mProgressDialog;
 
     /**
      * Mandatory empty constructor for the fragment manager to instantiate the
@@ -206,11 +204,6 @@ public class SoundCloudFragment extends Fragment
         mController.setAnchorView(view.findViewById(R.id.recycler_view));
         mController.setEnabled(true);
 
-        mProgressDialog = new ProgressDialog(getActivity());
-        mProgressDialog.setIndeterminate(true);
-        mProgressDialog.setProgressStyle(ProgressDialog.STYLE_SPINNER);
-        mProgressDialog.setMessage("Fetching results");
-
         if (savedInstanceState != null){
             Log.i(LOG_TAG, "onCreateView: Restoring from saved state");
             mSpinnerSelectedPos = savedInstanceState.getInt(SPINNER_SELECTED_KEY);
@@ -233,29 +226,6 @@ public class SoundCloudFragment extends Fragment
         // Assumes current activity is the searchable activity
         searchView.setSearchableInfo(searchManager.getSearchableInfo(getActivity().getComponentName()));
         searchView.setIconifiedByDefault(false); // Do not iconify the widget; expand it by default
-
-        mSearchCallback = new Callback<List<Track>>() {
-            @Override
-            public void onResponse(Call<List<Track>> call, Response<List<Track>> response) {
-                mProgressDialog.dismiss();
-                if (response.isSuccessful()) {
-                    List<Track> tracks = response.body();
-                    Log.i(LOG_TAG, "onResponse: " + tracks.toString());
-                    Toast.makeText(getActivity(), (tracks.get(0).getTitle()), Toast.LENGTH_LONG).show();
-                } else {
-                    Log.e(LOG_TAG, "onResponse: " + "Error code " + response.code());
-                    ((NavigationDrawerActivity)getActivity()).showSnackbar("Error while running search");
-                    showEmptyView();
-                }
-            }
-
-            @Override
-            public void onFailure(Call<List<Track>> call, Throwable t) {
-                mProgressDialog.dismiss();
-                ((NavigationDrawerActivity)getActivity()).showSnackbar("Network Error: " +  t.getMessage());
-                showEmptyView();
-            }
-        };
 
         return view;
     }
@@ -405,15 +375,74 @@ public class SoundCloudFragment extends Fragment
     }
 
     public void handleSearch(String query) {
-        Log.i(LOG_TAG, "handleSearch: Got query " + query);
+        Log.i(LOG_TAG, "handleSearch: Got query: " + query);
         if (mSpinner == null)
             return;
-        SCService scService = SCSingletonHolder.getService();
-        if (mSpinner.getSelectedItemPosition() == 0)
-            scService.getTracksByKey(query).enqueue(mSearchCallback);
-        else
-            scService.getTracksByTag(query).enqueue(mSearchCallback);
-        mProgressDialog.show();
+        SCAsyncTask scAsyncTask = new SCAsyncTask(getActivity());
+        scAsyncTask.execute(String.valueOf(mSpinner.getSelectedItemPosition()), query);
+    }
+
+    private void handleSCResponse(Response<List<Track>> response){
+        if (response == null){
+            ((NavigationDrawerActivity)getActivity()).showSnackbar("Network Error");
+            showEmptyView();
+        }
+        else if (response.isSuccessful()) {
+            List<Track> tracks = response.body();
+            Log.i(LOG_TAG, "onResponse: " + tracks.toString());
+            Toast.makeText(getActivity(), (tracks.get(0).getTitle()), Toast.LENGTH_LONG).show();
+        } else {
+            Log.e(LOG_TAG, "onResponse: " + "Error code " + response.code());
+            ((NavigationDrawerActivity)getActivity()).showSnackbar("Error while running search");
+            showEmptyView();
+        }
+    }
+
+    private class SCAsyncTask extends AsyncTask<String, Void, Response<List<Track>>> {
+
+        private Context mContext;
+        private ProgressDialog mProgressDialog;
+
+
+        SCAsyncTask (Context context){
+            mContext = context;
+            mProgressDialog = new ProgressDialog(mContext);
+            mProgressDialog.setIndeterminate(true);
+            mProgressDialog.setProgressStyle(ProgressDialog.STYLE_SPINNER);
+            mProgressDialog.setMessage("Fetching results");
+        }
+
+        @Override
+        protected void onPreExecute() {
+            mProgressDialog.show();
+            super.onPreExecute();
+        }
+
+        @Override
+        protected Response<List<Track>> doInBackground(String... params) {
+
+            SCService scService = SCSingletonHolder.getService();
+            String query = params[1];
+            Response<List<Track>> response;
+            try {
+                if (params[0].equals("0"))
+                    response= scService.getTracksByKey(query).execute();
+                else
+                    response= scService.getTracksByTag(query).execute();
+
+                return response;
+            } catch (IOException e) {
+                e.printStackTrace();
+                return null;
+            }
+        }
+
+        @Override
+        protected void onPostExecute(Response<List<Track>> response) {
+            mProgressDialog.dismiss();
+            handleSCResponse(response);
+            super.onPostExecute(response);
+        }
     }
 
     public class SoundCloudFragmentReceiver extends BroadcastReceiver {
