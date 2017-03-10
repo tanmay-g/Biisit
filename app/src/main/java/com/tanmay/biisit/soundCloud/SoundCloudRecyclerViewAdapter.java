@@ -1,10 +1,6 @@
 package com.tanmay.biisit.soundCloud;
 
-import android.content.ContentUris;
 import android.content.Context;
-import android.database.Cursor;
-import android.net.Uri;
-import android.provider.MediaStore;
 import android.support.v7.widget.RecyclerView;
 import android.view.LayoutInflater;
 import android.view.View;
@@ -13,6 +9,9 @@ import android.widget.ImageView;
 import android.widget.TextView;
 
 import com.tanmay.biisit.R;
+import com.tanmay.biisit.soundCloud.pojo.Track;
+
+import java.util.List;
 
 
 /**
@@ -22,34 +21,17 @@ import com.tanmay.biisit.R;
 class SoundCloudRecyclerViewAdapter extends RecyclerView.Adapter<SoundCloudRecyclerViewAdapter.ViewHolder> {
 
     private static final String LOG_TAG = SoundCloudRecyclerViewAdapter.class.getSimpleName();
-    private final Cursor mValues;
+    private final List<Track> mValues;
     private final Context mContext;
-    private final int mTitleColumn;
-    private final int mIdColumn;
-    private final int mArtistColumn;
     private final OnListFragmentInteractionListener mListener;
     private int mSelectedPosition = -1;
     private View mSelectedView;
 
 
-    SoundCloudRecyclerViewAdapter(Context context, OnListFragmentInteractionListener listener, Cursor data) {
+    SoundCloudRecyclerViewAdapter(Context context, OnListFragmentInteractionListener listener, List<Track> data) {
         mContext = context;
         mValues = data;
         mListener = listener;
-
-        if (mValues != null && mValues.moveToFirst()) {
-            mTitleColumn = mValues.getColumnIndex
-                    (MediaStore.Audio.Media.TITLE);
-            mIdColumn = mValues.getColumnIndex
-                    (MediaStore.Audio.Media._ID);
-            mArtistColumn = mValues.getColumnIndex
-                    (MediaStore.Audio.Media.ARTIST);
-        }
-        else  {
-            mTitleColumn = 0;
-            mIdColumn = 0;
-            mArtistColumn = 0;
-        }
     }
 
     @Override
@@ -64,15 +46,15 @@ class SoundCloudRecyclerViewAdapter extends RecyclerView.Adapter<SoundCloudRecyc
     public void onBindViewHolder(final ViewHolder holder, final int position) {
 //        holder.mItem = mValues.moveToPosition(position);
 
-        mValues.moveToPosition(position);
+        Track selectedTrack = mValues.get(position);
         holder.mIdView.setText(
-                String.valueOf((int) mValues.getLong(mIdColumn))
+                String.valueOf(position)
         );
         holder.mTitleView.setText(
-                mValues.getString(mTitleColumn)
+                selectedTrack.getTitle()
         );
         holder.mArtistView.setText(
-                mValues.getString(mArtistColumn)
+                selectedTrack.getUserName()
         );
 
         if (position == mSelectedPosition){
@@ -88,7 +70,7 @@ class SoundCloudRecyclerViewAdapter extends RecyclerView.Adapter<SoundCloudRecyc
 
     @Override
     public int getItemCount() {
-        return (mValues != null && mValues.moveToFirst()) ? mValues.getCount() : 0;
+        return mValues.size();
     }
 
     void selectItem(int position){
@@ -109,18 +91,18 @@ class SoundCloudRecyclerViewAdapter extends RecyclerView.Adapter<SoundCloudRecyc
         mSelectedPosition = -1;
     }
 
-    Uri getUriAtPos(int position){
-        mValues.moveToPosition(position);
-        Uri mediaUri=
-                ContentUris
-                        .withAppendedId(MediaStore.Audio.Media.EXTERNAL_CONTENT_URI,
-                                mValues.getInt(mIdColumn));
-        return mediaUri;
+//    Uri getUriAtPos(int position){
+//        return Uri.parse(mValues.get(position).getStreamURL());
+//        return mediaUri;
 
+//    }
+
+    Track getTrackAtPos(int position){
+        return mValues.get(position);
     }
 
     interface OnListFragmentInteractionListener {
-        void onListFragmentInteraction(Uri mediaUriToPlay, boolean start, int position);
+        void onListFragmentInteraction(Track trackToPlay, boolean start, int position);
 //        void onStarToggled();
     }
 
@@ -135,7 +117,6 @@ class SoundCloudRecyclerViewAdapter extends RecyclerView.Adapter<SoundCloudRecyc
             @Override
             public void onClick(View v) {
                 int adapterPosition = getAdapterPosition();
-                mValues.moveToPosition(adapterPosition);
 //                Log.i(LOG_TAG, "onClick: position " + adapterPosition);
                 boolean isAlreadyRunning = mView.isSelected();
                 unSelectSelectedView();
@@ -151,12 +132,9 @@ class SoundCloudRecyclerViewAdapter extends RecyclerView.Adapter<SoundCloudRecyc
                 mButton.setImageResource(
                         !isAlreadyRunning ? R.drawable.ic_pause : R.drawable.ic_play
                 );
-                Uri mediaUri=
-                        ContentUris
-                                .withAppendedId(MediaStore.Audio.Media.EXTERNAL_CONTENT_URI,
-                                        mValues.getInt(mIdColumn));
+//                Uri mediaUri= Uri.parse(mValues.get(adapterPosition).getStreamURL());
 //                    Log.i(LOG_TAG, "onClick: telling fragment about click at " + adapterPosition);
-                    mListener.onListFragmentInteraction(mediaUri, !isAlreadyRunning, adapterPosition);
+                mListener.onListFragmentInteraction(mValues.get(adapterPosition), !isAlreadyRunning, adapterPosition);
 
             }
         };

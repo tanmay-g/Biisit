@@ -1,12 +1,16 @@
 package com.tanmay.biisit.soundCloud.pojo;
 
+import android.os.Parcel;
+import android.os.Parcelable;
+
 import com.google.gson.annotations.SerializedName;
+import com.tanmay.biisit.BuildConfig;
 
 /**
  * Created by tanmay.godbole on 09-03-2017
  */
 
-public class Track {
+public class Track  implements Parcelable{
 
     @SerializedName("title")
     private String mTitle;
@@ -35,7 +39,7 @@ public class Track {
     }
 
     public String getStreamURL() {
-        return mStreamURL;
+        return mStreamURL + "?client_id=" + BuildConfig.SOUNDCLOUD_CLIENT_ID;
     }
 
     public String getArtworkURL() {
@@ -50,9 +54,48 @@ public class Track {
         return mUser.getName();
     }
 
+    @Override
+    public int describeContents() {
+        return 0;
+    }
+
+    public static final Parcelable.Creator<Track> CREATOR
+            = new Parcelable.Creator<Track>() {
+        public Track createFromParcel(Parcel in) {
+            return new Track(in);
+        }
+
+        public Track[] newArray(int size) {
+            return new Track[size];
+        }
+    };
+
+
+    private Track (Parcel in){
+        mTitle = in.readString();
+        mID = in.readInt();
+        mStreamURL = in.readString();
+        mArtworkURL = in.readString();
+        mDuration = in.readInt();
+        mUser = new User(in.readString());
+    }
+
+    @Override
+    public void writeToParcel(Parcel dest, int flags) {
+        dest.writeString(mTitle);
+        dest.writeInt(mID);
+        dest.writeString(mStreamURL);
+        dest.writeString(mArtworkURL);
+        dest.writeInt(mDuration);
+        dest.writeString(mUser.getName());
+    }
 }
 
 class User{
+
+    User(String name){
+        mName = name;
+    }
 
     @SerializedName("username")
     private String mName;

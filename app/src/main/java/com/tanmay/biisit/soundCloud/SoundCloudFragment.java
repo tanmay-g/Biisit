@@ -9,7 +9,6 @@ import android.content.Intent;
 import android.content.IntentFilter;
 import android.content.ServiceConnection;
 import android.media.MediaPlayer;
-import android.net.Uri;
 import android.os.AsyncTask;
 import android.os.Bundle;
 import android.os.IBinder;
@@ -47,7 +46,7 @@ import static com.tanmay.biisit.MediaPlayerService.ACTION_REDRAW;
 import static com.tanmay.biisit.MediaPlayerService.ACTION_STOP;
 import static com.tanmay.biisit.MediaPlayerService.BROADCAST_CLIENT_ID_KEY;
 import static com.tanmay.biisit.MediaPlayerService.BROADCAST_CLIENT_ITEM_POS_KEY;
-import static com.tanmay.biisit.MediaPlayerService.BROADCAST_MEDIA_URI_KEY;
+import static com.tanmay.biisit.MediaPlayerService.BROADCAST_MEDIA_TRACK_KEY;
 import static com.tanmay.biisit.MediaPlayerService.BROADCAST_RESUMED_ITEM_POS_KEY;
 import static com.tanmay.biisit.MediaPlayerService.BROADCAST_SEEK_POSITION_KEY;
 import static com.tanmay.biisit.MediaPlayerService.SERVICE_ACTION_PAUSE;
@@ -75,7 +74,7 @@ public class SoundCloudFragment extends Fragment
     private static final String IS_PLAYING_KEY = "IS_PLAYING_KEY";
     private boolean mServiceBound = false;
     private RecyclerView mRecyclerView;
-    private Uri mCurrentUri = null;
+    private Track mCurrentTrack = null;
     private SoundCloudRecyclerViewAdapter mRecyclerViewAdapter = null;
     private SoundCloudFragmentReceiver mSoundCloudFragmentReceiver = new SoundCloudFragmentReceiver();
     private CustomMediaController mController;
@@ -85,6 +84,8 @@ public class SoundCloudFragment extends Fragment
     private Spinner mSpinner;
     private int mSpinnerSelectedPos = -1;
     private boolean mIsPlaying = false;
+
+    private ProgressDialog mProgressDialog;
 
     /**
      * Mandatory empty constructor for the fragment manager to instantiate the
@@ -124,6 +125,8 @@ public class SoundCloudFragment extends Fragment
             Intent serviceStartIntent = new Intent(getActivity(), MediaPlayerService.class);
             getActivity().startService(serviceStartIntent);
         }
+//        else
+//            getActivity().bindService(new Intent(getActivity(), MediaPlayerService.class), mServiceConn, Context.BIND_AUTO_CREATE);
     }
 
     private void stopPlayAndUnbind(){
@@ -131,11 +134,21 @@ public class SoundCloudFragment extends Fragment
             getActivity().unbindService(mServiceConn);
             mServiceBound = false;
         }
-        mCurrentUri = null;
+        mCurrentTrack = null;
         mServiceMediaPlayer = null;
         mController.actuallyHide();
         playbackStopped();
     }
+
+    private void unBind(){
+        if (mServiceBound) {
+            getActivity().unbindService(mServiceConn);
+            mServiceBound = false;
+        }
+        mServiceMediaPlayer = null;
+        mController.actuallyHide();
+    }
+
 
     @Override
     public void onDestroy() {
@@ -160,7 +173,7 @@ public class SoundCloudFragment extends Fragment
         super.onSaveInstanceState(outState);
         outState.putInt(SPINNER_SELECTED_KEY, mSpinnerSelectedPos);
         outState.putInt(SELECTED_POS_KEY, mLastSelectedPos);
-        outState.putParcelable(CURRENT_URI_KEY, mCurrentUri);
+        outState.putParcelable(CURRENT_URI_KEY, mCurrentTrack);
         outState.putBoolean(IS_PLAYING_KEY, mIsPlaying);
     }
 
@@ -199,16 +212,21 @@ public class SoundCloudFragment extends Fragment
         drawer.setDrawerListener(toggle);
         toggle.syncState();
 
+        mProgressDialog = new ProgressDialog(getActivity());
+        mProgressDialog.setIndeterminate(true);
+        mProgressDialog.setProgressStyle(ProgressDialog.STYLE_SPINNER);
+        mProgressDialog.setMessage("Fetching track");
+
         mController = new CustomMediaController(getActivity(), true);
         mController.setMediaPlayer(SoundCloudFragment.this);
-        mController.setAnchorView(view.findViewById(R.id.recycler_view));
+        mController.setAnchorView(view.findViewById(R.id.inner_coordinator));
         mController.setEnabled(true);
 
         if (savedInstanceState != null){
             Log.i(LOG_TAG, "onCreateView: Restoring from saved state");
             mSpinnerSelectedPos = savedInstanceState.getInt(SPINNER_SELECTED_KEY);
             mLastSelectedPos = savedInstanceState.getInt(SELECTED_POS_KEY);
-            mCurrentUri = savedInstanceState.getParcelable(CURRENT_URI_KEY);
+            mCurrentTrack = savedInstanceState.getParcelable(CURRENT_URI_KEY);
             mIsPlaying = savedInstanceState.getBoolean(IS_PLAYING_KEY);
 //            respondToSpinnerValueChanage();
         }
@@ -253,28 +271,32 @@ public class SoundCloudFragment extends Fragment
         intent.setAction(action);
         intent.putExtra(BROADCAST_CLIENT_ID_KEY, SOUNDCLOUD_FRAGMENT_CLIENT_ID);
         intent.putExtra(BROADCAST_CLIENT_ITEM_POS_KEY, selectionPosition);
-        intent.putExtra(BROADCAST_MEDIA_URI_KEY, mCurrentUri);
+        if (action.equals(SERVICE_ACTION_START_PLAY))
+            intent.putExtra(BROADCAST_MEDIA_TRACK_KEY, mCurrentTrack);
         intent.putExtra(BROADCAST_SEEK_POSITION_KEY, resumePosition);
+//        intent.putExtra("track", mRecyclerViewAdapter.getTrackAtPos(selectionPosition));
         getActivity().sendBroadcast(intent);
     }
 
     @SuppressWarnings("all")
     @Override
-    public void onListFragmentInteraction(Uri mediaUri, boolean toStart, int position) {
+    public void onListFragmentInteraction(Track mediaUri, boolean toStart, int position) {
 
         mLastSelectedPos = position;
         mIsPlaying = toStart;
 
-        boolean sameAsCurrent = mediaUri.equals(mCurrentUri);
+        boolean sameAsCurrent = (mCurrentTrack != null) && (mediaUri.getID() == mCurrentTrack.getID());
         if (!sameAsCurrent && !toStart ) {
 //            Stopping new track
             Log.e(LOG_TAG, "onListFragmentInteraction: IMPOSSIBLE!!!");
         }else if (!sameAsCurrent && toStart){
 //            Starting new track
-//            mLastPlayedUri = mCurrentUri;
+//            mLastPlayedUri = mCurrentTrack;
             startServiceIfDown();
-            mCurrentUri = mediaUri;
+            unBind();
+            mCurrentTrack = mediaUri;
             sendServiceBroadcast(SERVICE_ACTION_START_PLAY, position);
+            mProgressDialog.show();
         }
         else if (sameAsCurrent && ! toStart){
 //            Stopping current track
@@ -299,9 +321,9 @@ public class SoundCloudFragment extends Fragment
         Toast.makeText(getActivity(), "Playback started at " + pos, Toast.LENGTH_SHORT).show();
         mRecyclerViewAdapter.selectItem(pos);
         mIsPlaying = true;
-        Uri newUri = mRecyclerViewAdapter.getUriAtPos(pos);
-        if (!newUri.equals(mCurrentUri))
-            mCurrentUri = newUri;
+        Track newUri = mRecyclerViewAdapter.getTrackAtPos(pos);
+        if (newUri.getID() != mCurrentTrack.getID())
+            mCurrentTrack = newUri;
     }
 
     @Override
@@ -389,8 +411,10 @@ public class SoundCloudFragment extends Fragment
         }
         else if (response.isSuccessful()) {
             List<Track> tracks = response.body();
-            Log.i(LOG_TAG, "onResponse: " + tracks.toString());
-            Toast.makeText(getActivity(), (tracks.get(0).getTitle()), Toast.LENGTH_LONG).show();
+            Log.i(LOG_TAG, "onResponse: got tracks");
+            mRecyclerViewAdapter = new SoundCloudRecyclerViewAdapter(getActivity(), this, tracks);
+            mRecyclerView.setAdapter(mRecyclerViewAdapter);
+//            TODO mSearchview.clearFocus()
         } else {
             Log.e(LOG_TAG, "onResponse: " + "Error code " + response.code());
             ((NavigationDrawerActivity)getActivity()).showSnackbar("Error while running search");
@@ -401,15 +425,11 @@ public class SoundCloudFragment extends Fragment
     private class SCAsyncTask extends AsyncTask<String, Void, Response<List<Track>>> {
 
         private Context mContext;
-        private ProgressDialog mProgressDialog;
+
 
 
         SCAsyncTask (Context context){
             mContext = context;
-            mProgressDialog = new ProgressDialog(mContext);
-            mProgressDialog.setIndeterminate(true);
-            mProgressDialog.setProgressStyle(ProgressDialog.STYLE_SPINNER);
-            mProgressDialog.setMessage("Fetching results");
         }
 
         @Override
@@ -449,10 +469,10 @@ public class SoundCloudFragment extends Fragment
 
         @Override
         public void onReceive(Context context, Intent intent) {
-            Log.i(LOG_TAG, "onReceive: " + intent.getAction());
             Bundle extras = intent.getExtras();
             if (extras.getInt(BROADCAST_CLIENT_ID_KEY, -1) != SOUNDCLOUD_FRAGMENT_CLIENT_ID)
                 return;
+            Log.i(LOG_TAG, "onReceive: " + intent.getAction());
 
             if (intent.getAction().equals(ACTION_PLAY)){
                 int itemPosToSelect = extras.getInt(BROADCAST_RESUMED_ITEM_POS_KEY);
@@ -469,6 +489,8 @@ public class SoundCloudFragment extends Fragment
                 stopPlayAndUnbind();
             }
             else if (intent.getAction().equals(ACTION_REDRAW)){
+                if (mProgressDialog.isShowing())
+                    mProgressDialog.dismiss();
                 refreshOrBind();
             }
         }

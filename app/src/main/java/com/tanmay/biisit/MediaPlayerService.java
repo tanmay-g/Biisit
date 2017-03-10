@@ -8,6 +8,7 @@ import android.content.Intent;
 import android.content.IntentFilter;
 import android.graphics.Bitmap;
 import android.graphics.BitmapFactory;
+import android.graphics.drawable.Drawable;
 import android.media.AudioManager;
 import android.media.MediaMetadataRetriever;
 import android.media.MediaPlayer;
@@ -23,7 +24,14 @@ import android.support.v4.media.session.MediaSessionCompat;
 import android.support.v7.app.NotificationCompat;
 import android.util.Log;
 
+import com.squareup.picasso.Picasso;
+import com.squareup.picasso.Target;
+import com.tanmay.biisit.soundCloud.pojo.Track;
+
 import java.io.IOException;
+
+import static com.tanmay.biisit.myMusic.MyMusicFragment.MY_MUSIC_FRAGMENT_CLIENT_ID;
+import static com.tanmay.biisit.soundCloud.SoundCloudFragment.SOUNDCLOUD_FRAGMENT_CLIENT_ID;
 
 public class MediaPlayerService extends Service implements MediaPlayer.OnCompletionListener,
         MediaPlayer.OnPreparedListener, MediaPlayer.OnErrorListener, MediaPlayer.OnSeekCompleteListener,
@@ -40,6 +48,7 @@ public class MediaPlayerService extends Service implements MediaPlayer.OnComplet
     public static final String BROADCAST_CLIENT_ITEM_POS_KEY = "BROADCAST_CLIENT_ITEM_POS_KEY";
     public static final String BROADCAST_SEEK_POSITION_KEY = "BROADCAST_SEEK_POSITION_KEY";
     public static final String BROADCAST_MEDIA_URI_KEY = "BROADCAST_MEDIA_URI_KEY";
+    public static final String BROADCAST_MEDIA_TRACK_KEY = "BROADCAST_MEDIA_TRACK_KEY";
 
     public static final String SERVICE_ACTION_START_PLAY = "com.tanmay.biisit.SERVICE_ACTION_START_PLAY";
     public static final String SERVICE_ACTION_RESUME = "com.tanmay.biisit.SERVICE_ACTION_RESUME";
@@ -483,6 +492,57 @@ public class MediaPlayerService extends Service implements MediaPlayer.OnComplet
                 .build();
     }
 
+    private void setMetadata(Track track){
+        String artworkUrl = track.getArtworkURL();
+        Bitmap b = getBitmapFromURL(artworkUrl);
+        if (b == null)
+            b = BitmapFactory.decodeResource(getResources(), android.R.drawable.stat_sys_headset);
+        mMetadata = new MediaMetadataCompat.Builder()
+                .putBitmap(MediaMetadataCompat.METADATA_KEY_ALBUM_ART, b)
+                .putString(MediaMetadataCompat.METADATA_KEY_ARTIST, track.getUserName())
+                .putString(MediaMetadataCompat.METADATA_KEY_TITLE, track.getTitle())
+                .build();
+    }
+
+
+    private Bitmap getBitmapFromURL(String imageUrl) {
+//        try {
+//            URL url = new URL(src);
+//            HttpURLConnection connection = (HttpURLConnection) url.openConnection();
+//            connection.setDoInput(true);
+//            connection.connect();
+//            InputStream input = connection.getInputStream();
+//            Bitmap myBitmap = BitmapFactory.decodeStream(input);
+//            return myBitmap;
+//        } catch (IOException e) {
+//            Log.e(LOG_TAG, "getBitmapFromURL: Error: ", e);
+//            return null;
+//        }
+        final Bitmap[] b = new Bitmap[1];
+        Picasso.with(this)
+                .load(imageUrl)
+                .into(new Target() {
+                    @Override
+                    public void onBitmapLoaded(Bitmap bitmap, Picasso.LoadedFrom from) {
+                        // loaded bitmap is here (bitmap)
+                        b[0] = bitmap;
+                    }
+
+                    @Override
+                    public void onBitmapFailed(Drawable errorDrawable) {
+
+                    }
+
+                    @Override
+                    public void onPrepareLoad(Drawable placeHolderDrawable) {
+
+                    }
+                });
+        return b[0];
+    }
+
+
+
     public enum PlaybackStatus {
         PLAYING,
         PAUSED
@@ -502,45 +562,104 @@ public class MediaPlayerService extends Service implements MediaPlayer.OnComplet
 
             if (intent.getAction().equals(SERVICE_ACTION_START_PLAY)){
 
-                Uri localMediaUri = null;
                 int clientId = -1;
-                int clientItemPos = -1;
                 try {
-                    localMediaUri = (Uri)extras.get(BROADCAST_MEDIA_URI_KEY);
                     clientId = extras.getInt(BROADCAST_CLIENT_ID_KEY);
-                    clientItemPos = extras.getInt(BROADCAST_CLIENT_ITEM_POS_KEY);
                 }
                 catch (Exception e){
                     e.printStackTrace();
                     stopMedia();
-                }
-                if (mCurrentClient != -1 && mCurrentClient != clientId){
-                    sendServiceBroadcast(ACTION_PAUSE);
-                }
-                else if (mClientItemPos == clientItemPos){
-                    Log.i(LOG_TAG, "onReceive: Got a start request for something that was already playing");
-//                    This shouldn't happen, but handle it to be nice
-                    resumeMediaNoFeedback();
-                    sendServiceBroadcast(ACTION_REDRAW);
                     return;
                 }
+                switch (clientId){
 
-                mCurrentClient = clientId;
-                mClientItemPos = clientItemPos;
-                initMediaPlayer();
-                MediaMetadataRetriever retriever = new MediaMetadataRetriever();
-                try {
-                    // Set the data source to the mediaFile location
-                    if (localMediaUri != null) {
-                        mMediaPlayer.setDataSource(MediaPlayerService.this, localMediaUri);
-                        retriever.setDataSource(MediaPlayerService.this, localMediaUri);
+                    case MY_MUSIC_FRAGMENT_CLIENT_ID: {
+
+                        Uri localMediaUri = null;
+                        int clientItemPos = -1;
+                        try {
+                            localMediaUri = (Uri) extras.get(BROADCAST_MEDIA_URI_KEY);
+                            clientItemPos = extras.getInt(BROADCAST_CLIENT_ITEM_POS_KEY);
+                        } catch (Exception e) {
+                            e.printStackTrace();
+                            stopMedia();
+                            return;
+                        }
+                        if (mCurrentClient != -1 && mCurrentClient != clientId) {
+                            sendServiceBroadcast(ACTION_PAUSE);
+                        } else if (mClientItemPos == clientItemPos) {
+                            Log.i(LOG_TAG, "onReceive: Got a start request for something that was already playing");
+//                    This shouldn't happen, but handle it to be nice
+                            resumeMediaNoFeedback();
+                            sendServiceBroadcast(ACTION_REDRAW);
+                            return;
+                        }
+
+                        mCurrentClient = clientId;
+                        mClientItemPos = clientItemPos;
+                        initMediaPlayer();
+                        MediaMetadataRetriever retriever = new MediaMetadataRetriever();
+                        try {
+                            // Set the data source to the mediaFile location
+                            if (localMediaUri != null) {
+                                mMediaPlayer.setDataSource(MediaPlayerService.this, localMediaUri);
+                                retriever.setDataSource(MediaPlayerService.this, localMediaUri);
+
+                            }
+                        } catch (IOException | IllegalArgumentException e) {
+                            e.printStackTrace();
+                            stopMedia();
+                            return;
+                        }
+                        setMetadata(retriever);
+                        mMediaPlayer.prepareAsync();
+
+                        break;
                     }
-                } catch (IOException e) {
-                    e.printStackTrace();
-                    stopMedia();
+                    case SOUNDCLOUD_FRAGMENT_CLIENT_ID: {
+
+                        Track trackToPlay = null;
+                        int clientItemPos = -1;
+                        try {
+                            trackToPlay = (Track) extras.get(BROADCAST_MEDIA_TRACK_KEY);
+                            clientItemPos = extras.getInt(BROADCAST_CLIENT_ITEM_POS_KEY);
+                        } catch (Exception e) {
+                            e.printStackTrace();
+                            stopMedia();
+                            return;
+                        }
+                        if (mCurrentClient != -1 && mCurrentClient != clientId) {
+                            sendServiceBroadcast(ACTION_PAUSE);
+                        } else if (mClientItemPos == clientItemPos) {
+                            Log.i(LOG_TAG, "onReceive: Got a start request for something that was already playing");
+//                    This shouldn't happen, but handle it to be nice
+                            resumeMediaNoFeedback();
+                            sendServiceBroadcast(ACTION_REDRAW);
+                            return;
+                        }
+
+                        mCurrentClient = clientId;
+                        mClientItemPos = clientItemPos;
+                        initMediaPlayer();
+                        try {
+                            // Set the data source to the mediaFile location
+                            if (trackToPlay != null && trackToPlay.getStreamURL() != null) {
+                                mMediaPlayer.setDataSource(trackToPlay.getStreamURL());
+
+                            }
+                        } catch (IOException | IllegalArgumentException e) {
+                            e.printStackTrace();
+                            stopMedia();
+                            return;
+                        }
+                        setMetadata(trackToPlay);
+                        mMediaPlayer.prepareAsync();
+
+                        break;
+                    }
+                    default:
+                        stopMedia();
                 }
-                setMetadata(retriever);
-                mMediaPlayer.prepareAsync();
             }
 
             else if (intent.getAction().equals(SERVICE_ACTION_RESUME)){

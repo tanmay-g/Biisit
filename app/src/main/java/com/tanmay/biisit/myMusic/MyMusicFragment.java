@@ -597,10 +597,10 @@ public class MyMusicFragment extends Fragment
 
         @Override
         public void onReceive(Context context, Intent intent) {
-            Log.i(LOG_TAG, "onReceive: " + intent.getAction());
             Bundle extras = intent.getExtras();
             if (extras.getInt(BROADCAST_CLIENT_ID_KEY, -1) != MY_MUSIC_FRAGMENT_CLIENT_ID)
                 return;
+            Log.i(LOG_TAG, "onReceive: " + intent.getAction());
 
             if (intent.getAction().equals(ACTION_PLAY)){
                 int itemPosToSelect = extras.getInt(BROADCAST_RESUMED_ITEM_POS_KEY);
