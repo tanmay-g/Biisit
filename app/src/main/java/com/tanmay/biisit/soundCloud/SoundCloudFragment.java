@@ -14,6 +14,7 @@ import android.os.Bundle;
 import android.os.IBinder;
 import android.support.v4.app.Fragment;
 import android.support.v4.widget.DrawerLayout;
+import android.support.v4.widget.SwipeRefreshLayout;
 import android.support.v7.app.ActionBarDrawerToggle;
 import android.support.v7.app.AppCompatActivity;
 import android.support.v7.widget.LinearLayoutManager;
@@ -74,6 +75,7 @@ public class SoundCloudFragment extends Fragment
     private static final String CURRENT_URI_KEY = "CURRENT_URI_KEY";
     private static final String IS_PLAYING_KEY = "IS_PLAYING_KEY";
     private static final String SEARCH_RESULTS_KEY = "SEARCH_RESULTS_KEY";
+    private static final String LAST_QUERY_KEY = "LAST_QUERY_KEY";
     private boolean mServiceBound = false;
     private RecyclerView mRecyclerView;
     private Track mCurrentTrack = null;
@@ -89,6 +91,8 @@ public class SoundCloudFragment extends Fragment
 
     private ProgressDialog mProgressDialog;
     private List<Track> mSearchResults = null;
+    private SwipeRefreshLayout mRefreshView;
+    private String mLastSearchedQuery;
 
     /**
      * Mandatory empty constructor for the fragment manager to instantiate the
@@ -179,6 +183,7 @@ public class SoundCloudFragment extends Fragment
         outState.putInt(SELECTED_POS_KEY, mLastSelectedPos);
         outState.putParcelable(CURRENT_URI_KEY, mCurrentTrack);
         outState.putBoolean(IS_PLAYING_KEY, mIsPlaying);
+        outState.putString(LAST_QUERY_KEY, mLastSearchedQuery);
         if (mSearchResults != null)
             outState.putParcelableArray(SEARCH_RESULTS_KEY,  mSearchResults.toArray(new Track[mSearchResults.size()]));
     }
@@ -234,6 +239,7 @@ public class SoundCloudFragment extends Fragment
             mLastSelectedPos = savedInstanceState.getInt(SELECTED_POS_KEY);
             mCurrentTrack = savedInstanceState.getParcelable(CURRENT_URI_KEY);
             mIsPlaying = savedInstanceState.getBoolean(IS_PLAYING_KEY);
+            mLastSearchedQuery = savedInstanceState.getString(LAST_QUERY_KEY);
             Track[] savedResults = (Track[])savedInstanceState.getParcelableArray(SEARCH_RESULTS_KEY);
             if (savedResults != null) {
                 mSearchResults = Arrays.asList(savedResults);
@@ -256,6 +262,15 @@ public class SoundCloudFragment extends Fragment
                 R.layout.custom_spinner_item);
         spinnerAdapter.setDropDownViewResource(R.layout.custom_spinner_dropdown_item);
         mSpinner.setAdapter(spinnerAdapter);
+
+        mRefreshView = (SwipeRefreshLayout) view.findViewById(R.id.swipe_refresh_layout);
+        mRefreshView.setOnRefreshListener(new SwipeRefreshLayout.OnRefreshListener() {
+            @Override
+            public void onRefresh() {
+                handleSearch(mLastSearchedQuery);
+                mRefreshView.setRefreshing(false);
+            }
+        });
 
         // Get the SearchView and set the searchable configuration
         SearchManager searchManager = (SearchManager) getActivity().getSystemService(Context.SEARCH_SERVICE);
@@ -417,6 +432,7 @@ public class SoundCloudFragment extends Fragment
 
     public void handleSearch(String query) {
         Log.i(LOG_TAG, "handleSearch: Got query: " + query);
+        mLastSearchedQuery = query;
         if (mSpinner == null)
             return;
 //        SCAsyncTask scAsyncTask =
