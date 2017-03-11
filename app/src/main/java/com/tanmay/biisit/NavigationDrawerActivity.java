@@ -41,6 +41,7 @@ public class NavigationDrawerActivity extends AppCompatActivity
     private static final String SOUNDCLOUD_STATE_KEY = "SOUNDCLOUD_STATE_KEY";
     private static final String SOUNDCLOUD_FRAGMENT_TAG = "SoundCloud";
     private static final String MY_MUSIC_FRAGMENT_TAG = "MyMusic";
+    private static final String TITLE_STATE_KEY = "TITLE_STATE_KEY";
     NavigationView mNavigationView;
 
     MyMusicFragment mMyMusicFragment;
@@ -79,6 +80,7 @@ public class NavigationDrawerActivity extends AppCompatActivity
                 mSoundCloudFragmentState = (Fragment.SavedState) savedInstanceState.getParcelable(SOUNDCLOUD_STATE_KEY);
                 mSoundCloudFragment.setInitialSavedState(mSoundCloudFragmentState);
             }
+            setTitle(savedInstanceState.getString(TITLE_STATE_KEY));
         }
         if (getIntent() != null)
             handleIntent(getIntent());
@@ -106,6 +108,7 @@ public class NavigationDrawerActivity extends AppCompatActivity
         super.onSaveInstanceState(outState);
         outState.putParcelable(MY_MUSIC_STATE_KEY, mMyMusicFragmentState);
         outState.putParcelable(SOUNDCLOUD_STATE_KEY, mSoundCloudFragmentState);
+        outState.putString(TITLE_STATE_KEY, getTitle().toString());
     }
 
     private void updateUserDisplay(){

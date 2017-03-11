@@ -88,7 +88,7 @@ public class SoundCloudFragment extends Fragment
     private boolean mIsPlaying = false;
 
     private ProgressDialog mProgressDialog;
-    private List<Track> mSearchResult;
+    private List<Track> mSearchResults = null;
 
     /**
      * Mandatory empty constructor for the fragment manager to instantiate the
@@ -179,7 +179,8 @@ public class SoundCloudFragment extends Fragment
         outState.putInt(SELECTED_POS_KEY, mLastSelectedPos);
         outState.putParcelable(CURRENT_URI_KEY, mCurrentTrack);
         outState.putBoolean(IS_PLAYING_KEY, mIsPlaying);
-        outState.putParcelableArray(SEARCH_RESULTS_KEY,  mSearchResult.toArray(new Track[mSearchResult.size()]));
+        if (mSearchResults != null)
+            outState.putParcelableArray(SEARCH_RESULTS_KEY,  mSearchResults.toArray(new Track[mSearchResults.size()]));
     }
 
     private void registerBroadcastReceivers() {
@@ -197,7 +198,7 @@ public class SoundCloudFragment extends Fragment
     @Override
     public View onCreateView(LayoutInflater inflater, ViewGroup container,
                              Bundle savedInstanceState) {
-        Log.i(LOG_TAG, "onCreateView");
+        Log.i(LOG_TAG, "onCreateView with saved state: " + (savedInstanceState == null ? "null" : "not null"));
         View view = inflater.inflate(R.layout.fragment_soundcloud, container, false);
         // Set the adapter
         mRecyclerView = (RecyclerView) view.findViewById(R.id.recycler_view);
@@ -220,7 +221,7 @@ public class SoundCloudFragment extends Fragment
         mProgressDialog = new ProgressDialog(getActivity());
         mProgressDialog.setIndeterminate(true);
         mProgressDialog.setProgressStyle(ProgressDialog.STYLE_SPINNER);
-        mProgressDialog.setMessage("Fetching track");
+        mProgressDialog.setMessage("Fetching...");
 
         mController = new CustomMediaController(getActivity(), true);
         mController.setMediaPlayer(SoundCloudFragment.this);
@@ -233,12 +234,20 @@ public class SoundCloudFragment extends Fragment
             mLastSelectedPos = savedInstanceState.getInt(SELECTED_POS_KEY);
             mCurrentTrack = savedInstanceState.getParcelable(CURRENT_URI_KEY);
             mIsPlaying = savedInstanceState.getBoolean(IS_PLAYING_KEY);
-            mSearchResult = Arrays.asList((Track[])savedInstanceState.getParcelableArray(SEARCH_RESULTS_KEY));
+            Track[] savedResults = (Track[])savedInstanceState.getParcelableArray(SEARCH_RESULTS_KEY);
+            if (savedResults != null) {
+                mSearchResults = Arrays.asList(savedResults);
+            }
             displayResults();
             if (mIsPlaying) {
                 mRecyclerViewAdapter.selectItem(mLastSelectedPos);
             }
 //            respondToSpinnerValueChanage();
+        }else if (mSearchResults != null){
+            displayResults();
+            if (mIsPlaying) {
+                mRecyclerViewAdapter.selectItem(mLastSelectedPos);
+            }
         }
 
         mSpinner = (Spinner) view.findViewById(R.id.search_type_spinner);
@@ -410,8 +419,8 @@ public class SoundCloudFragment extends Fragment
         Log.i(LOG_TAG, "handleSearch: Got query: " + query);
         if (mSpinner == null)
             return;
-        SCAsyncTask scAsyncTask = new SCAsyncTask(getActivity());
-        scAsyncTask.execute(String.valueOf(mSpinner.getSelectedItemPosition()), query);
+//        SCAsyncTask scAsyncTask =
+        new SCAsyncTask().execute(String.valueOf(mSpinner.getSelectedItemPosition()), query);
     }
 
     private void handleSCResponse(Response<List<Track>> response){
@@ -420,7 +429,7 @@ public class SoundCloudFragment extends Fragment
             showEmptyView();
         }
         else if (response.isSuccessful()) {
-            mSearchResult = response.body();
+            mSearchResults = response.body();
             Log.i(LOG_TAG, "onResponse: got tracks");
             displayResults();
 //            TODO mSearchview.clearFocus()
@@ -432,19 +441,19 @@ public class SoundCloudFragment extends Fragment
     }
 
     private void displayResults(){
-        mRecyclerViewAdapter = new SoundCloudRecyclerViewAdapter(getActivity(), this, mSearchResult);
+        mRecyclerViewAdapter = new SoundCloudRecyclerViewAdapter(getActivity(), this, mSearchResults);
         mRecyclerView.setAdapter(mRecyclerViewAdapter);
     }
 
     private class SCAsyncTask extends AsyncTask<String, Void, Response<List<Track>>> {
 
-        private Context mContext;
+//        private Context mContext;
 
 
 
-        SCAsyncTask (Context context){
-            mContext = context;
-        }
+//        SCAsyncTask (Context context){
+//            mContext = context;
+//        }
 
         @Override
         protected void onPreExecute() {
@@ -454,6 +463,8 @@ public class SoundCloudFragment extends Fragment
 
         @Override
         protected Response<List<Track>> doInBackground(String... params) {
+
+            Log.i(LOG_TAG, "doInBackground: Async running");
 
             SCService scService = SCSingletonHolder.getService();
             String query = params[1];

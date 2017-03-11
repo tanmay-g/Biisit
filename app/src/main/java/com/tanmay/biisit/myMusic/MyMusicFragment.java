@@ -209,7 +209,7 @@ public class MyMusicFragment extends Fragment
     @Override
     public View onCreateView(LayoutInflater inflater, ViewGroup container,
                              Bundle savedInstanceState) {
-        Log.i(LOG_TAG, "onCreateView");
+        Log.i(LOG_TAG, "onCreateView with saved state: " + (savedInstanceState == null ? "null" : "not null"));
         View view = inflater.inflate(R.layout.fragment_mymusic, container, false);
         // Set the adapter
         mRecyclerView = (RecyclerView) view.findViewById(R.id.recyclerView);

@@ -70,7 +70,10 @@ class SoundCloudRecyclerViewAdapter extends RecyclerView.Adapter<SoundCloudRecyc
 
     @Override
     public int getItemCount() {
-        return mValues.size();
+        if (mValues != null)
+            return mValues.size();
+        else
+            return 0;
     }
 
     void selectItem(int position){
