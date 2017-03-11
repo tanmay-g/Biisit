@@ -36,6 +36,7 @@ import com.tanmay.biisit.R;
 import com.tanmay.biisit.soundCloud.pojo.Track;
 
 import java.io.IOException;
+import java.util.Arrays;
 import java.util.List;
 
 import retrofit2.Response;
@@ -72,6 +73,7 @@ public class SoundCloudFragment extends Fragment
     private static final String SELECTED_POS_KEY = "SELECTED_POS_KEY";
     private static final String CURRENT_URI_KEY = "CURRENT_URI_KEY";
     private static final String IS_PLAYING_KEY = "IS_PLAYING_KEY";
+    private static final String SEARCH_RESULTS_KEY = "SEARCH_RESULTS_KEY";
     private boolean mServiceBound = false;
     private RecyclerView mRecyclerView;
     private Track mCurrentTrack = null;
@@ -86,6 +88,7 @@ public class SoundCloudFragment extends Fragment
     private boolean mIsPlaying = false;
 
     private ProgressDialog mProgressDialog;
+    private List<Track> mSearchResult;
 
     /**
      * Mandatory empty constructor for the fragment manager to instantiate the
@@ -171,10 +174,12 @@ public class SoundCloudFragment extends Fragment
     @Override
     public void onSaveInstanceState(Bundle outState) {
         super.onSaveInstanceState(outState);
+        Log.i(LOG_TAG, "onSaveInstanceState: Saving state");
         outState.putInt(SPINNER_SELECTED_KEY, mSpinnerSelectedPos);
         outState.putInt(SELECTED_POS_KEY, mLastSelectedPos);
         outState.putParcelable(CURRENT_URI_KEY, mCurrentTrack);
         outState.putBoolean(IS_PLAYING_KEY, mIsPlaying);
+        outState.putParcelableArray(SEARCH_RESULTS_KEY,  mSearchResult.toArray(new Track[mSearchResult.size()]));
     }
 
     private void registerBroadcastReceivers() {
@@ -228,6 +233,11 @@ public class SoundCloudFragment extends Fragment
             mLastSelectedPos = savedInstanceState.getInt(SELECTED_POS_KEY);
             mCurrentTrack = savedInstanceState.getParcelable(CURRENT_URI_KEY);
             mIsPlaying = savedInstanceState.getBoolean(IS_PLAYING_KEY);
+            mSearchResult = Arrays.asList((Track[])savedInstanceState.getParcelableArray(SEARCH_RESULTS_KEY));
+            displayResults();
+            if (mIsPlaying) {
+                mRecyclerViewAdapter.selectItem(mLastSelectedPos);
+            }
 //            respondToSpinnerValueChanage();
         }
 
@@ -410,16 +420,20 @@ public class SoundCloudFragment extends Fragment
             showEmptyView();
         }
         else if (response.isSuccessful()) {
-            List<Track> tracks = response.body();
+            mSearchResult = response.body();
             Log.i(LOG_TAG, "onResponse: got tracks");
-            mRecyclerViewAdapter = new SoundCloudRecyclerViewAdapter(getActivity(), this, tracks);
-            mRecyclerView.setAdapter(mRecyclerViewAdapter);
+            displayResults();
 //            TODO mSearchview.clearFocus()
         } else {
             Log.e(LOG_TAG, "onResponse: " + "Error code " + response.code());
             ((NavigationDrawerActivity)getActivity()).showSnackbar("Error while running search");
             showEmptyView();
         }
+    }
+
+    private void displayResults(){
+        mRecyclerViewAdapter = new SoundCloudRecyclerViewAdapter(getActivity(), this, mSearchResult);
+        mRecyclerView.setAdapter(mRecyclerViewAdapter);
     }
 
     private class SCAsyncTask extends AsyncTask<String, Void, Response<List<Track>>> {

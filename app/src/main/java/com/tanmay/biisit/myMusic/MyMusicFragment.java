@@ -186,6 +186,7 @@ public class MyMusicFragment extends Fragment
 
     @Override
     public void onSaveInstanceState(Bundle outState) {
+        Log.i(LOG_TAG, "onSaveInstanceState: saving state");
         super.onSaveInstanceState(outState);
         outState.putInt(SPINNER_SELECTED_KEY, mSpinnerSelectedPos);
         outState.putInt(SELECTED_POS_KEY, mLastSelectedPos);

@@ -235,6 +235,7 @@ public class MediaPlayerService extends Service implements MediaPlayer.OnComplet
 
     @Override
     public void onPrepared(MediaPlayer mp) {
+        Log.i(LOG_TAG, "onPrepared: player is prepared");
         playMedia();
         sendServiceBroadcast(ACTION_REDRAW);
     }
@@ -494,18 +495,26 @@ public class MediaPlayerService extends Service implements MediaPlayer.OnComplet
 
     private void setMetadata(Track track){
         String artworkUrl = track.getArtworkURL();
-        Bitmap b = getBitmapFromURL(artworkUrl);
-        if (b == null)
-            b = BitmapFactory.decodeResource(getResources(), android.R.drawable.stat_sys_headset);
+        if (artworkUrl == null)
+            saveMetadataWithBitmap(track, null);
+        else
+            getBitmapFromURL(artworkUrl, track);
+    }
+
+    private void saveMetadataWithBitmap(Track track, Bitmap bitmap){
+        if (bitmap== null)
+            bitmap = BitmapFactory.decodeResource(getResources(), android.R.drawable.stat_sys_headset);
         mMetadata = new MediaMetadataCompat.Builder()
-                .putBitmap(MediaMetadataCompat.METADATA_KEY_ALBUM_ART, b)
+                .putBitmap(MediaMetadataCompat.METADATA_KEY_ALBUM_ART, bitmap)
                 .putString(MediaMetadataCompat.METADATA_KEY_ARTIST, track.getUserName())
                 .putString(MediaMetadataCompat.METADATA_KEY_TITLE, track.getTitle())
                 .build();
+        Log.i(LOG_TAG, "saveMetadataWithBitmap: Will now prepare player");
+        mMediaPlayer.prepareAsync();
     }
 
 
-    private Bitmap getBitmapFromURL(String imageUrl) {
+    private void getBitmapFromURL(String imageUrl, final Track track) {
 //        try {
 //            URL url = new URL(src);
 //            HttpURLConnection connection = (HttpURLConnection) url.openConnection();
@@ -518,18 +527,23 @@ public class MediaPlayerService extends Service implements MediaPlayer.OnComplet
 //            Log.e(LOG_TAG, "getBitmapFromURL: Error: ", e);
 //            return null;
 //        }
-        final Bitmap[] b = new Bitmap[1];
+//        final Bitmap[] b = new Bitmap[1];
+        Log.i(LOG_TAG, "getBitmapFromURL: Starting bitmap load for: " + imageUrl);
         Picasso.with(this)
                 .load(imageUrl)
                 .into(new Target() {
                     @Override
                     public void onBitmapLoaded(Bitmap bitmap, Picasso.LoadedFrom from) {
+                        Log.i(LOG_TAG, "onBitmapLoaded: Got the bitmap!!!!!!!!!!!!!!!!!!!");
                         // loaded bitmap is here (bitmap)
-                        b[0] = bitmap;
+//                        b[0] = bitmap;
+                        saveMetadataWithBitmap(track, bitmap);
                     }
 
                     @Override
                     public void onBitmapFailed(Drawable errorDrawable) {
+                        Log.i(LOG_TAG, "onBitmapFailed: Load failed");
+                        saveMetadataWithBitmap(track, null);
 
                     }
 
@@ -538,7 +552,7 @@ public class MediaPlayerService extends Service implements MediaPlayer.OnComplet
 
                     }
                 });
-        return b[0];
+//        return b[0];
     }
 
 
@@ -653,7 +667,7 @@ public class MediaPlayerService extends Service implements MediaPlayer.OnComplet
                             return;
                         }
                         setMetadata(trackToPlay);
-                        mMediaPlayer.prepareAsync();
+//                        mMediaPlayer.prepareAsync();
 
                         break;
                     }
