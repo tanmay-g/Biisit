@@ -38,6 +38,11 @@ public class MediaPlayerService extends Service implements MediaPlayer.OnComplet
         MediaPlayer.OnInfoListener, MediaPlayer.OnBufferingUpdateListener,
         AudioManager.OnAudioFocusChangeListener {
 
+    public static boolean sIsPlaying = false;
+    public static int sCurrentClient = -1;
+    public static int sCurrentClientItemPos = -1;
+    public static boolean sIsRunning = false;
+
     public static final String ACTION_PLAY = "com.tanmay.biisit.ACTION_PLAY";
     public static final String ACTION_PAUSE = "com.tanmay.biisit.ACTION_PAUSE";
     public static final String ACTION_STOP = "com.tanmay.biisit.ACTION_STOP";
@@ -59,7 +64,6 @@ public class MediaPlayerService extends Service implements MediaPlayer.OnComplet
     private static final String LOG_TAG = MediaPlayerService.class.getSimpleName();
     //AudioPlayer notification ID
     private static final int NOTIFICATION_ID = 101;
-    public static boolean sIsRunning = false;
     private MediaPlayer mMediaPlayer;
     private int resumePosition;
     private AudioManager mAudioManager;
@@ -77,8 +81,8 @@ public class MediaPlayerService extends Service implements MediaPlayer.OnComplet
 //            buildNotification(PlaybackStatus.PAUSED);
         }
     };
-    private int mCurrentClient = -1;
-    private int mClientItemPos = -1;
+//    private int mCurrentClient = -1;
+//    private int mClientItemPos = -1;
 
     private MediaPlayerServiceReceiver mServiceBroadcastListener = new MediaPlayerServiceReceiver();
 
@@ -90,7 +94,7 @@ public class MediaPlayerService extends Service implements MediaPlayer.OnComplet
             }
             return mMediaPlayer;
         }
-    };
+    }
 
     public MediaPlayerService() {
     }
@@ -247,7 +251,37 @@ public class MediaPlayerService extends Service implements MediaPlayer.OnComplet
 
     private void initMediaPlayer() {
         if (mMediaPlayer == null)
-            mMediaPlayer = new MediaPlayer();
+            mMediaPlayer = new MediaPlayer(){
+                @Override
+                public void start() throws IllegalStateException {
+                    super.start();
+                    sIsPlaying = true;
+                }
+
+                @Override
+                public void stop() throws IllegalStateException {
+                    super.stop();
+                    sIsPlaying = false;
+                }
+
+                @Override
+                public void pause() throws IllegalStateException {
+                    super.pause();
+                    sIsPlaying = false;
+                }
+
+                @Override
+                public void release() {
+                    super.release();
+                    sIsPlaying = false;
+                }
+
+                @Override
+                public void reset() {
+                    super.reset();
+                    sIsPlaying = false;
+                }
+            };
         else
             mMediaPlayer.reset();
             //Reset so that the MediaPlayer is not pointing to another data source
@@ -268,8 +302,10 @@ public class MediaPlayerService extends Service implements MediaPlayer.OnComplet
 //        Log.i(LOG_TAG, "sendServiceBroadcast: Sending client pos as " + mClientItemPos);
         Intent intent = new Intent();
         intent.setAction(action);
-        intent.putExtra(BROADCAST_CLIENT_ID_KEY, mCurrentClient);
-        intent.putExtra(BROADCAST_RESUMED_ITEM_POS_KEY, mClientItemPos);
+//        intent.putExtra(BROADCAST_CLIENT_ID_KEY, mCurrentClient);
+//        intent.putExtra(BROADCAST_RESUMED_ITEM_POS_KEY, mClientItemPos);
+        intent.putExtra(BROADCAST_CLIENT_ID_KEY, sCurrentClient);
+        intent.putExtra(BROADCAST_RESUMED_ITEM_POS_KEY, sCurrentClientItemPos);
         sendBroadcast(intent);
 
     }
@@ -363,7 +399,7 @@ public class MediaPlayerService extends Service implements MediaPlayer.OnComplet
 
         // Attach Callback to receive MediaSession updates
         mediaSession.setCallback(new MediaSessionCompat.Callback() {
-            // Implement callbacks, from notification and controller. Service internal callbacks.
+            // Implement callbacks, from notification. Service internal callbacks.
             // DO Inform current player about this to update UI
             @Override
             public void onPlay() {
@@ -389,7 +425,7 @@ public class MediaPlayerService extends Service implements MediaPlayer.OnComplet
 
             @Override
             public void onSeekTo(long position) {
-//                Log.i(LOG_TAG, "seekTo in mediaSessionCallback");
+                Log.i(LOG_TAG, "seekTo in mediaSessionCallback");
                 super.onSeekTo(position);
             }
         });
@@ -515,28 +551,12 @@ public class MediaPlayerService extends Service implements MediaPlayer.OnComplet
 
 
     private void getBitmapFromURL(String imageUrl, final Track track) {
-//        try {
-//            URL url = new URL(src);
-//            HttpURLConnection connection = (HttpURLConnection) url.openConnection();
-//            connection.setDoInput(true);
-//            connection.connect();
-//            InputStream input = connection.getInputStream();
-//            Bitmap myBitmap = BitmapFactory.decodeStream(input);
-//            return myBitmap;
-//        } catch (IOException e) {
-//            Log.e(LOG_TAG, "getBitmapFromURL: Error: ", e);
-//            return null;
-//        }
-//        final Bitmap[] b = new Bitmap[1];
-//        Log.i(LOG_TAG, "getBitmapFromURL: Starting bitmap load for: " + imageUrl);
         Picasso.with(this)
                 .load(imageUrl)
                 .into(new Target() {
                     @Override
                     public void onBitmapLoaded(Bitmap bitmap, Picasso.LoadedFrom from) {
 //                        Log.i(LOG_TAG, "onBitmapLoaded: Got the bitmap!!!!!!!!!!!!!!!!!!!");
-                        // loaded bitmap is here (bitmap)
-//                        b[0] = bitmap;
                         saveMetadataWithBitmap(track, bitmap);
                     }
 
@@ -552,7 +572,6 @@ public class MediaPlayerService extends Service implements MediaPlayer.OnComplet
 
                     }
                 });
-//        return b[0];
     }
 
 
@@ -599,18 +618,19 @@ public class MediaPlayerService extends Service implements MediaPlayer.OnComplet
                             stopMedia();
                             return;
                         }
-                        if (mCurrentClient != -1 && mCurrentClient != clientId) {
-                            sendServiceBroadcast(ACTION_PAUSE);
-                        } else if (mClientItemPos == clientItemPos) {
-                            Log.i(LOG_TAG, "onReceive: Got a start request for something that was already playing");
+//                        if (mCurrentClient != -1 && mCurrentClient != clientId) {
+//                            sendServiceBroadcast(ACTION_PAUSE);
+//                        } else
+                        if (sCurrentClientItemPos == clientItemPos && sCurrentClient == clientId) {
+                            Log.wtf(LOG_TAG, "onReceive: Got a new start request for something that was already playing/paused");
 //                    This shouldn't happen, but handle it to be nice
                             resumeMediaNoFeedback();
                             sendServiceBroadcast(ACTION_REDRAW);
                             return;
                         }
 
-                        mCurrentClient = clientId;
-                        mClientItemPos = clientItemPos;
+                        sCurrentClient = clientId;
+                        sCurrentClientItemPos = clientItemPos;
                         initMediaPlayer();
                         MediaMetadataRetriever retriever = new MediaMetadataRetriever();
                         try {
@@ -642,18 +662,16 @@ public class MediaPlayerService extends Service implements MediaPlayer.OnComplet
                             stopMedia();
                             return;
                         }
-                        if (mCurrentClient != -1 && mCurrentClient != clientId) {
-                            sendServiceBroadcast(ACTION_PAUSE);
-                        } else if (mClientItemPos == clientItemPos) {
-                            Log.i(LOG_TAG, "onReceive: Got a start request for something that was already playing");
+                        if (sCurrentClientItemPos == clientItemPos && sCurrentClient == clientId) {
+                            Log.wtf(LOG_TAG, "onReceive: Got a new start request for something that was already playing/paused");
 //                    This shouldn't happen, but handle it to be nice
                             resumeMediaNoFeedback();
                             sendServiceBroadcast(ACTION_REDRAW);
                             return;
                         }
 
-                        mCurrentClient = clientId;
-                        mClientItemPos = clientItemPos;
+                        sCurrentClient = clientId;
+                        sCurrentClientItemPos = clientItemPos;
                         initMediaPlayer();
                         try {
                             // Set the data source to the mediaFile location

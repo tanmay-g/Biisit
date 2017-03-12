@@ -189,9 +189,9 @@ public class MyMusicFragment extends Fragment
 //        Log.i(LOG_TAG, "onSaveInstanceState: saving state");
         super.onSaveInstanceState(outState);
         outState.putInt(SPINNER_SELECTED_KEY, mSpinnerSelectedPos);
-        outState.putInt(SELECTED_POS_KEY, mLastSelectedPos);
+//        outState.putInt(SELECTED_POS_KEY, mLastSelectedPos);
         outState.putParcelable(CURRENT_URI_KEY, mCurrentUri);
-        outState.putBoolean(IS_PLAYING_KEY, mIsPlaying);
+//        outState.putBoolean(IS_PLAYING_KEY, mIsPlaying);
         outState.putIntegerArrayList(FAV_ID_KEY, (ArrayList<Integer>) mFavouriteIds);
     }
 
@@ -302,12 +302,22 @@ public class MyMusicFragment extends Fragment
         if (savedInstanceState != null){
 //            Log.i(LOG_TAG, "onCreateView: Restoring from saved state");
             mSpinnerSelectedPos = savedInstanceState.getInt(SPINNER_SELECTED_KEY);
-            mLastSelectedPos = savedInstanceState.getInt(SELECTED_POS_KEY);
+//            mLastSelectedPos = savedInstanceState.getInt(SELECTED_POS_KEY);
             mCurrentUri = savedInstanceState.getParcelable(CURRENT_URI_KEY);
-            mIsPlaying = savedInstanceState.getBoolean(IS_PLAYING_KEY);
+//            mIsPlaying = savedInstanceState.getBoolean(IS_PLAYING_KEY);
             mFavouriteIds = savedInstanceState.getIntegerArrayList(FAV_ID_KEY);
 //            respondToSpinnerValueChanage();
         }
+
+        if (MediaPlayerService.sCurrentClient == MY_MUSIC_FRAGMENT_CLIENT_ID) {
+            mLastSelectedPos = MediaPlayerService.sCurrentClientItemPos;
+            mIsPlaying = MediaPlayerService.sIsPlaying;
+        }
+        else {
+            mLastSelectedPos = -1;
+            mIsPlaying = false;
+        }
+
 
         return view;
     }
@@ -468,8 +478,12 @@ public class MyMusicFragment extends Fragment
 
         mLastSelectedPos = position;
         mIsPlaying = toStart;
-
-        boolean sameAsCurrent = mediaUri.equals(mCurrentUri);
+        boolean sameAsCurrent;
+        if (MediaPlayerService.sCurrentClient == MY_MUSIC_FRAGMENT_CLIENT_ID) {
+            sameAsCurrent = mediaUri.equals(mCurrentUri);
+        }
+        else
+            sameAsCurrent = false;
         if (!sameAsCurrent && !toStart ) {
 //            Stopping new track
             Log.e(LOG_TAG, "onListFragmentInteraction: IMPOSSIBLE!!!");

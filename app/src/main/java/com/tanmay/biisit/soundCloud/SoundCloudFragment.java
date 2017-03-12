@@ -180,9 +180,9 @@ public class SoundCloudFragment extends Fragment
         super.onSaveInstanceState(outState);
 //        Log.i(LOG_TAG, "onSaveInstanceState: Saving state");
         outState.putInt(SPINNER_SELECTED_KEY, mSpinnerSelectedPos);
-        outState.putInt(SELECTED_POS_KEY, mLastSelectedPos);
+//        outState.putInt(SELECTED_POS_KEY, mLastSelectedPos);
         outState.putParcelable(CURRENT_URI_KEY, mCurrentTrack);
-        outState.putBoolean(IS_PLAYING_KEY, mIsPlaying);
+//        outState.putBoolean(IS_PLAYING_KEY, mIsPlaying);
         outState.putString(LAST_QUERY_KEY, mLastSearchedQuery);
         if (mSearchResults != null)
             outState.putParcelableArray(SEARCH_RESULTS_KEY,  mSearchResults.toArray(new Track[mSearchResults.size()]));
@@ -233,23 +233,33 @@ public class SoundCloudFragment extends Fragment
         mController.setAnchorView(view.findViewById(R.id.inner_coordinator));
         mController.setEnabled(true);
 
+        if (MediaPlayerService.sCurrentClient == SOUNDCLOUD_FRAGMENT_CLIENT_ID) {
+            mLastSelectedPos = MediaPlayerService.sCurrentClientItemPos;
+            mIsPlaying = MediaPlayerService.sIsPlaying;
+        }
+        else {
+            mLastSelectedPos = -1;
+            mIsPlaying = false;
+        }
         if (savedInstanceState != null){
 //            Log.i(LOG_TAG, "onCreateView: Restoring from saved state");
             mSpinnerSelectedPos = savedInstanceState.getInt(SPINNER_SELECTED_KEY);
-            mLastSelectedPos = savedInstanceState.getInt(SELECTED_POS_KEY);
+//            mLastSelectedPos = savedInstanceState.getInt(SELECTED_POS_KEY);
             mCurrentTrack = savedInstanceState.getParcelable(CURRENT_URI_KEY);
-            mIsPlaying = savedInstanceState.getBoolean(IS_PLAYING_KEY);
+//            mIsPlaying = savedInstanceState.getBoolean(IS_PLAYING_KEY);
             mLastSearchedQuery = savedInstanceState.getString(LAST_QUERY_KEY);
             Track[] savedResults = (Track[])savedInstanceState.getParcelableArray(SEARCH_RESULTS_KEY);
             if (savedResults != null) {
                 mSearchResults = Arrays.asList(savedResults);
             }
-            displayResults();
-            if (mIsPlaying) {
-                mRecyclerViewAdapter.selectItem(mLastSelectedPos);
-            }
+//            displayResults();
+//            if (mIsPlaying) {
+//                mRecyclerViewAdapter.selectItem(mLastSelectedPos);
+//            }
 //            respondToSpinnerValueChanage();
-        }else if (mSearchResults != null){
+        }
+//        else
+        if (mSearchResults != null){
             displayResults();
             if (mIsPlaying) {
                 mRecyclerViewAdapter.selectItem(mLastSelectedPos);
@@ -318,8 +328,12 @@ public class SoundCloudFragment extends Fragment
 
         mLastSelectedPos = position;
         mIsPlaying = toStart;
-
-        boolean sameAsCurrent = (mCurrentTrack != null) && (mediaUri.getID() == mCurrentTrack.getID());
+        boolean sameAsCurrent;
+        if (MediaPlayerService.sCurrentClient == SOUNDCLOUD_FRAGMENT_CLIENT_ID) {
+            sameAsCurrent = (mCurrentTrack != null) && (mediaUri.getID() == mCurrentTrack.getID());
+        }
+        else
+            sameAsCurrent = false;
         if (!sameAsCurrent && !toStart ) {
 //            Stopping new track
             Log.e(LOG_TAG, "onListFragmentInteraction: IMPOSSIBLE!!!");
@@ -462,14 +476,6 @@ public class SoundCloudFragment extends Fragment
     }
 
     private class SCAsyncTask extends AsyncTask<String, Void, Response<List<Track>>> {
-
-//        private Context mContext;
-
-
-
-//        SCAsyncTask (Context context){
-//            mContext = context;
-//        }
 
         @Override
         protected void onPreExecute() {
