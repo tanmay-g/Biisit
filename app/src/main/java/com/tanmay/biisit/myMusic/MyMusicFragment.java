@@ -186,7 +186,7 @@ public class MyMusicFragment extends Fragment
 
     @Override
     public void onSaveInstanceState(Bundle outState) {
-        Log.i(LOG_TAG, "onSaveInstanceState: saving state");
+//        Log.i(LOG_TAG, "onSaveInstanceState: saving state");
         super.onSaveInstanceState(outState);
         outState.putInt(SPINNER_SELECTED_KEY, mSpinnerSelectedPos);
         outState.putInt(SELECTED_POS_KEY, mLastSelectedPos);
@@ -209,7 +209,7 @@ public class MyMusicFragment extends Fragment
     @Override
     public View onCreateView(LayoutInflater inflater, ViewGroup container,
                              Bundle savedInstanceState) {
-        Log.i(LOG_TAG, "onCreateView with saved state: " + (savedInstanceState == null ? "null" : "not null"));
+        Log.i(LOG_TAG, "onCreateView");
         View view = inflater.inflate(R.layout.fragment_mymusic, container, false);
         // Set the adapter
         mRecyclerView = (RecyclerView) view.findViewById(R.id.recyclerView);
@@ -223,7 +223,7 @@ public class MyMusicFragment extends Fragment
 //            mRecyclerView.setAdapter(new MyMusicRecyclerViewAdapter(getActivity(), this, null, false));
         }
 
-        Toolbar toolbar = (Toolbar) view.findViewById(R.id.toolbar);
+        Toolbar toolbar = (Toolbar) view.findViewById(R.id.toolbar_mm);
         ((AppCompatActivity) getActivity()).setSupportActionBar(toolbar);
         DrawerLayout drawer = (DrawerLayout) getActivity().findViewById(R.id.drawer_layout);
         ActionBarDrawerToggle toggle = new ActionBarDrawerToggle(
@@ -244,7 +244,7 @@ public class MyMusicFragment extends Fragment
             @Override
             public void onDataChange(DataSnapshot dataSnapshot) {
                 if (mOnlyFav){
-                    Log.i(LOG_TAG, "onDataChange: UserData updated/listener's first call");
+//                    Log.i(LOG_TAG, "onDataChange: UserData updated/listener's first call");
                     List<Integer> newFavouriteIds = new ArrayList<>();
                     for (DataSnapshot i : dataSnapshot.getChildren()){
                         newFavouriteIds.add(Integer.valueOf(i.getKey()));
@@ -300,7 +300,7 @@ public class MyMusicFragment extends Fragment
         FirebaseAuth.getInstance().addAuthStateListener(mAuthListener);
 
         if (savedInstanceState != null){
-            Log.i(LOG_TAG, "onCreateView: Restoring from saved state");
+//            Log.i(LOG_TAG, "onCreateView: Restoring from saved state");
             mSpinnerSelectedPos = savedInstanceState.getInt(SPINNER_SELECTED_KEY);
             mLastSelectedPos = savedInstanceState.getInt(SELECTED_POS_KEY);
             mCurrentUri = savedInstanceState.getParcelable(CURRENT_URI_KEY);
@@ -370,7 +370,7 @@ public class MyMusicFragment extends Fragment
                 @Override
                 public void onItemSelected(AdapterView<?> adapterView, View view, int position, long id) {
 //                    if (mSpinnerSelectedPos != position) {
-                        Log.i(LOG_TAG, "onItemSelected: spinner was selected with new pos " + position);
+//                        Log.i(LOG_TAG, "onItemSelected: spinner was selected with new pos " + position);
                         mSpinnerSelectedPos = position;
                         mOnlyFav = (position == 1);
 //                        Log.i(LOG_TAG, "onItemSelected: removing listener for User1Ref");
@@ -403,7 +403,7 @@ public class MyMusicFragment extends Fragment
 
     @Override
     public Loader<Cursor> onCreateLoader(int id, Bundle args) {
-        Log.i(LOG_TAG, "onCreateLoader: For fav only?: " + mOnlyFav);
+        Log.i(LOG_TAG, "onCreateLoader");
 
         switch (id) {
             case CURSOR_LOADER_ID_FAV:

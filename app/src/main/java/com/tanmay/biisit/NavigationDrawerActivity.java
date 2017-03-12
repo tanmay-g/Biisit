@@ -19,7 +19,6 @@ import android.util.Log;
 import android.view.MenuItem;
 import android.view.View;
 import android.widget.TextView;
-import android.widget.Toast;
 
 import com.firebase.ui.auth.AuthUI;
 import com.firebase.ui.auth.ErrorCodes;
@@ -54,19 +53,20 @@ public class NavigationDrawerActivity extends AppCompatActivity
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
+        checkPermission();
         setContentView(R.layout.activity_navigation_drawer);
 
         mNavigationView = (NavigationView) findViewById(R.id.nav_view);
         mNavigationView.setNavigationItemSelectedListener(this);
 
         if (savedInstanceState == null) {
-            Log.i(LOG_TAG, "onCreate: null savedState");
+//            Log.i(LOG_TAG, "onCreate: null savedState");
             mMyMusicFragment = new MyMusicFragment();
             mSoundCloudFragment = new SoundCloudFragment();
             onNavigationItemSelected(mNavigationView.getMenu().getItem(0));
         }
         else {
-            Log.i(LOG_TAG, "onCreate: Restoring from savedState");
+//            Log.i(LOG_TAG, "onCreate: Restoring from savedState");
             mMyMusicFragment = (MyMusicFragment) getSupportFragmentManager().findFragmentByTag(MY_MUSIC_FRAGMENT_TAG);
             mSoundCloudFragment = (SoundCloudFragment) getSupportFragmentManager().findFragmentByTag(SOUNDCLOUD_FRAGMENT_TAG);
 //            mMyMusicFragment = (MyMusicFragment) getSupportFragmentManager().getFragment(savedInstanceState, MY_MUSIC_STATE_KEY);
@@ -87,6 +87,28 @@ public class NavigationDrawerActivity extends AppCompatActivity
         updateUserDisplay();
     }
 
+    private void checkPermission(){
+        if (ContextCompat.checkSelfPermission(this,
+                Manifest.permission.READ_EXTERNAL_STORAGE)
+                != PackageManager.PERMISSION_GRANTED) {
+
+            // Should we show an explanation?
+            if (ActivityCompat.shouldShowRequestPermissionRationale(this,
+                    Manifest.permission.READ_EXTERNAL_STORAGE)) {
+                showSnackbar("Cannot read local music without permission");
+                // Show an explanation to the user *asynchronously* -- don't block
+                // this thread waiting for the user's response! After the user
+                // sees the explanation, try again to request the permission.
+
+            } else {
+                // No explanation needed, we can request the permission.
+                ActivityCompat.requestPermissions(this,
+                        new String[]{Manifest.permission.READ_EXTERNAL_STORAGE},
+                        1);
+            }
+        }
+    }
+
     @Override
     protected void onNewIntent(Intent intent) {
         super.onNewIntent(intent);
@@ -95,7 +117,7 @@ public class NavigationDrawerActivity extends AppCompatActivity
 
     private void handleIntent(Intent intent) {
         if (Intent.ACTION_SEARCH.equals(intent.getAction())) {
-            Log.i(LOG_TAG, "handleIntent: SEARCH intent got");
+//            Log.i(LOG_TAG, "handleIntent: SEARCH intent got");
             String query = intent.getStringExtra(SearchManager.QUERY);
             if (mSoundCloudFragment != null){
                 mSoundCloudFragment.handleSearch(query);
@@ -152,52 +174,32 @@ public class NavigationDrawerActivity extends AppCompatActivity
 
         boolean accountStuff = false;
 
-        //remove this check?
-        if (ContextCompat.checkSelfPermission(this,
-                Manifest.permission.READ_EXTERNAL_STORAGE)
-                != PackageManager.PERMISSION_GRANTED) {
-
-            // Should we show an explanation?
-            if (ActivityCompat.shouldShowRequestPermissionRationale(this,
-                    Manifest.permission.READ_EXTERNAL_STORAGE)) {
-                Toast.makeText(this, "Gimme permission", Toast.LENGTH_SHORT).show();
-                // Show an explanation to the user *asynchronously* -- don't block
-                // this thread waiting for the user's response! After the user
-                // sees the explanation, try again to request the permission.
-
-            } else {
-                // No explanation needed, we can request the permission.
-                ActivityCompat.requestPermissions(this,
-                        new String[]{Manifest.permission.READ_EXTERNAL_STORAGE},
-                        1);
-            }
-        }
-
         // Handle navigation view item clicks here.
         int id = item.getItemId();
 
         if (id == R.id.my_music) {
-//                MyMusicFragment fragment = new MyMusicFragment();
-//                getSupportFragmentManager().beginTransaction().replace(R.id.content_navigation_drawer, new MyMusicFragment(), MY_MUSIC_STATE_KEY).commit();
-//            }
-//            else {
+            if (ContextCompat.checkSelfPermission(this, Manifest.permission.READ_EXTERNAL_STORAGE) != PackageManager.PERMISSION_GRANTED) {
+                checkPermission();
+                return false;
+            }
             try {
 
                 mSoundCloudFragmentState = getSupportFragmentManager().saveFragmentInstanceState(mSoundCloudFragment);
             }catch (IllegalStateException i){
-
+                Log.w(LOG_TAG, "onNavigationItemSelected: fragment was not present with frag manager");
             }
             getSupportFragmentManager().beginTransaction().replace(R.id.content_navigation_drawer, mMyMusicFragment, MY_MUSIC_FRAGMENT_TAG).commit();
-//            }
-        } else if (id == R.id.soundcloud) {
+        }
+        else if (id == R.id.soundcloud) {
             try {
                 mMyMusicFragmentState = getSupportFragmentManager().saveFragmentInstanceState(mMyMusicFragment);
             }
             catch (IllegalStateException i){
-
+                Log.w(LOG_TAG, "onNavigationItemSelected: fragment was not present with frag manager");
             }
             getSupportFragmentManager().beginTransaction().replace(R.id.content_navigation_drawer, mSoundCloudFragment, SOUNDCLOUD_FRAGMENT_TAG).commit();
-        } else if (id == R.id.sign_in_out) {
+        }
+        else if (id == R.id.sign_in_out) {
             accountStuff = true;
             if (FirebaseAuth.getInstance().getCurrentUser() != null) {
                 AuthUI.getInstance()

@@ -235,7 +235,7 @@ public class MediaPlayerService extends Service implements MediaPlayer.OnComplet
 
     @Override
     public void onPrepared(MediaPlayer mp) {
-        Log.i(LOG_TAG, "onPrepared: player is prepared");
+//        Log.i(LOG_TAG, "onPrepared: player is prepared");
         playMedia();
         sendServiceBroadcast(ACTION_REDRAW);
     }
@@ -290,7 +290,7 @@ public class MediaPlayerService extends Service implements MediaPlayer.OnComplet
     }
 
     public void stopMedia() {
-        Log.i(LOG_TAG, "stopMedia: call received");
+//        Log.i(LOG_TAG, "stopMedia: call received");
         sendServiceBroadcast(ACTION_STOP);
         stopMediaNoFeedback();
     }
@@ -306,7 +306,7 @@ public class MediaPlayerService extends Service implements MediaPlayer.OnComplet
     }
 
     public void pauseMedia() {
-        Log.i(LOG_TAG, "pauseMedia: call received");
+//        Log.i(LOG_TAG, "pauseMedia: call received");
         sendServiceBroadcast(ACTION_PAUSE);
         pauseMediaNoFeedback();
     }
@@ -320,7 +320,7 @@ public class MediaPlayerService extends Service implements MediaPlayer.OnComplet
     }
 
     public void resumeMedia() {
-        Log.i(LOG_TAG, "resumeMedia: call received");
+//        Log.i(LOG_TAG, "resumeMedia: call received");
         sendServiceBroadcast(ACTION_PLAY);
         resumeMediaNoFeedback();
     }
@@ -509,7 +509,7 @@ public class MediaPlayerService extends Service implements MediaPlayer.OnComplet
                 .putString(MediaMetadataCompat.METADATA_KEY_ARTIST, track.getUserName())
                 .putString(MediaMetadataCompat.METADATA_KEY_TITLE, track.getTitle())
                 .build();
-        Log.i(LOG_TAG, "saveMetadataWithBitmap: Will now prepare player");
+//        Log.i(LOG_TAG, "saveMetadataWithBitmap: Will now prepare player");
         mMediaPlayer.prepareAsync();
     }
 
@@ -528,13 +528,13 @@ public class MediaPlayerService extends Service implements MediaPlayer.OnComplet
 //            return null;
 //        }
 //        final Bitmap[] b = new Bitmap[1];
-        Log.i(LOG_TAG, "getBitmapFromURL: Starting bitmap load for: " + imageUrl);
+//        Log.i(LOG_TAG, "getBitmapFromURL: Starting bitmap load for: " + imageUrl);
         Picasso.with(this)
                 .load(imageUrl)
                 .into(new Target() {
                     @Override
                     public void onBitmapLoaded(Bitmap bitmap, Picasso.LoadedFrom from) {
-                        Log.i(LOG_TAG, "onBitmapLoaded: Got the bitmap!!!!!!!!!!!!!!!!!!!");
+//                        Log.i(LOG_TAG, "onBitmapLoaded: Got the bitmap!!!!!!!!!!!!!!!!!!!");
                         // loaded bitmap is here (bitmap)
 //                        b[0] = bitmap;
                         saveMetadataWithBitmap(track, bitmap);

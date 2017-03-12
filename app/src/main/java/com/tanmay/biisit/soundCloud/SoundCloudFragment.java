@@ -178,7 +178,7 @@ public class SoundCloudFragment extends Fragment
     @Override
     public void onSaveInstanceState(Bundle outState) {
         super.onSaveInstanceState(outState);
-        Log.i(LOG_TAG, "onSaveInstanceState: Saving state");
+//        Log.i(LOG_TAG, "onSaveInstanceState: Saving state");
         outState.putInt(SPINNER_SELECTED_KEY, mSpinnerSelectedPos);
         outState.putInt(SELECTED_POS_KEY, mLastSelectedPos);
         outState.putParcelable(CURRENT_URI_KEY, mCurrentTrack);
@@ -203,7 +203,7 @@ public class SoundCloudFragment extends Fragment
     @Override
     public View onCreateView(LayoutInflater inflater, ViewGroup container,
                              Bundle savedInstanceState) {
-        Log.i(LOG_TAG, "onCreateView with saved state: " + (savedInstanceState == null ? "null" : "not null"));
+        Log.i(LOG_TAG, "onCreateView");
         View view = inflater.inflate(R.layout.fragment_soundcloud, container, false);
         // Set the adapter
         mRecyclerView = (RecyclerView) view.findViewById(R.id.recycler_view);
@@ -213,7 +213,7 @@ public class SoundCloudFragment extends Fragment
 //            mRecyclerView.setAdapter(new SoundCloudRecyclerViewAdapter(getActivity(), this, null, false));
         }
 
-        Toolbar toolbar = (Toolbar) view.findViewById(R.id.toolbar);
+        Toolbar toolbar = (Toolbar) view.findViewById(R.id.toolbar_sc);
         ((AppCompatActivity) getActivity()).setSupportActionBar(toolbar);
 //        ((AppCompatActivity) getActivity()).getSupportActionBar().setDisplayShowTitleEnabled(false);
         DrawerLayout drawer = (DrawerLayout) getActivity().findViewById(R.id.drawer_layout);
@@ -234,7 +234,7 @@ public class SoundCloudFragment extends Fragment
         mController.setEnabled(true);
 
         if (savedInstanceState != null){
-            Log.i(LOG_TAG, "onCreateView: Restoring from saved state");
+//            Log.i(LOG_TAG, "onCreateView: Restoring from saved state");
             mSpinnerSelectedPos = savedInstanceState.getInt(SPINNER_SELECTED_KEY);
             mLastSelectedPos = savedInstanceState.getInt(SELECTED_POS_KEY);
             mCurrentTrack = savedInstanceState.getParcelable(CURRENT_URI_KEY);
@@ -446,7 +446,7 @@ public class SoundCloudFragment extends Fragment
         }
         else if (response.isSuccessful()) {
             mSearchResults = response.body();
-            Log.i(LOG_TAG, "onResponse: got tracks");
+//            Log.i(LOG_TAG, "onResponse: got tracks");
             displayResults();
 //            TODO mSearchview.clearFocus()
         } else {
@@ -480,7 +480,7 @@ public class SoundCloudFragment extends Fragment
         @Override
         protected Response<List<Track>> doInBackground(String... params) {
 
-            Log.i(LOG_TAG, "doInBackground: Async running");
+//            Log.i(LOG_TAG, "doInBackground: Async running");
 
             SCService scService = SCSingletonHolder.getService();
             String query = params[1];
