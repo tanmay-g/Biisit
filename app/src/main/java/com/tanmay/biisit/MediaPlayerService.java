@@ -125,7 +125,14 @@ public class MediaPlayerService extends Service implements MediaPlayer.OnComplet
 
     private void endSelf(){
         stopForeground(true);
+        resetStaticFlags();
 //        stopSelf();
+    }
+
+    private void resetStaticFlags(){
+        sCurrentClient = -1;
+        sCurrentClientItemPos = -1;
+        sIsPlaying = false;
     }
 
     @Override
@@ -545,18 +552,19 @@ public class MediaPlayerService extends Service implements MediaPlayer.OnComplet
                 .putString(MediaMetadataCompat.METADATA_KEY_ARTIST, track.getUserName())
                 .putString(MediaMetadataCompat.METADATA_KEY_TITLE, track.getTitle())
                 .build();
-//        Log.i(LOG_TAG, "saveMetadataWithBitmap: Will now prepare player");
+        Log.i(LOG_TAG, "saveMetadataWithBitmap: Will now prepare player");
         mMediaPlayer.prepareAsync();
     }
 
 
     private void getBitmapFromURL(String imageUrl, final Track track) {
+        Log.i(LOG_TAG, "getBitmapFromURL: Starting bitmap load");
         Picasso.with(this)
                 .load(imageUrl)
                 .into(new Target() {
                     @Override
                     public void onBitmapLoaded(Bitmap bitmap, Picasso.LoadedFrom from) {
-//                        Log.i(LOG_TAG, "onBitmapLoaded: Got the bitmap!!!!!!!!!!!!!!!!!!!");
+                        Log.i(LOG_TAG, "onBitmapLoaded: Got the bitmap!!!!!!!!!!!!!!!!!!!");
                         saveMetadataWithBitmap(track, bitmap);
                     }
 

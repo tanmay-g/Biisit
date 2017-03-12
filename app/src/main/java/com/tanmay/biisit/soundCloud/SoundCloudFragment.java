@@ -55,6 +55,7 @@ import static com.tanmay.biisit.MediaPlayerService.SERVICE_ACTION_PAUSE;
 import static com.tanmay.biisit.MediaPlayerService.SERVICE_ACTION_RESUME;
 import static com.tanmay.biisit.MediaPlayerService.SERVICE_ACTION_SEEK;
 import static com.tanmay.biisit.MediaPlayerService.SERVICE_ACTION_START_PLAY;
+import static com.tanmay.biisit.MediaPlayerService.SERVICE_ACTION_STOP;
 
 /**
  * A fragment representing a list of Items.
@@ -74,6 +75,7 @@ public class SoundCloudFragment extends Fragment
     private static final String SELECTED_POS_KEY = "SELECTED_POS_KEY";
     private static final String CURRENT_URI_KEY = "CURRENT_URI_KEY";
     private static final String IS_PLAYING_KEY = "IS_PLAYING_KEY";
+    private static final String STOP_ON_NEXT_PAUSE_KEY = "STOP_ON_NEXT_PAUSE_KEY";
     private static final String SEARCH_RESULTS_KEY = "SEARCH_RESULTS_KEY";
     private static final String LAST_QUERY_KEY = "LAST_QUERY_KEY";
     private boolean mServiceBound = false;
@@ -88,6 +90,7 @@ public class SoundCloudFragment extends Fragment
     private Spinner mSpinner;
     private int mSpinnerSelectedPos = -1;
     private boolean mIsPlaying = false;
+    private boolean mStopPlayOnNextPause;
 
     private ProgressDialog mProgressDialog;
     private List<Track> mSearchResults = null;
@@ -184,6 +187,7 @@ public class SoundCloudFragment extends Fragment
         outState.putParcelable(CURRENT_URI_KEY, mCurrentTrack);
 //        outState.putBoolean(IS_PLAYING_KEY, mIsPlaying);
         outState.putString(LAST_QUERY_KEY, mLastSearchedQuery);
+        outState.putBoolean(STOP_ON_NEXT_PAUSE_KEY, mStopPlayOnNextPause);
         if (mSearchResults != null)
             outState.putParcelableArray(SEARCH_RESULTS_KEY,  mSearchResults.toArray(new Track[mSearchResults.size()]));
     }
@@ -233,14 +237,6 @@ public class SoundCloudFragment extends Fragment
         mController.setAnchorView(view.findViewById(R.id.inner_coordinator));
         mController.setEnabled(true);
 
-        if (MediaPlayerService.sCurrentClient == SOUNDCLOUD_FRAGMENT_CLIENT_ID) {
-            mLastSelectedPos = MediaPlayerService.sCurrentClientItemPos;
-            mIsPlaying = MediaPlayerService.sIsPlaying;
-        }
-        else {
-            mLastSelectedPos = -1;
-            mIsPlaying = false;
-        }
         if (savedInstanceState != null){
 //            Log.i(LOG_TAG, "onCreateView: Restoring from saved state");
             mSpinnerSelectedPos = savedInstanceState.getInt(SPINNER_SELECTED_KEY);
@@ -248,6 +244,7 @@ public class SoundCloudFragment extends Fragment
             mCurrentTrack = savedInstanceState.getParcelable(CURRENT_URI_KEY);
 //            mIsPlaying = savedInstanceState.getBoolean(IS_PLAYING_KEY);
             mLastSearchedQuery = savedInstanceState.getString(LAST_QUERY_KEY);
+            mStopPlayOnNextPause = savedInstanceState.getBoolean(STOP_ON_NEXT_PAUSE_KEY);
             Track[] savedResults = (Track[])savedInstanceState.getParcelableArray(SEARCH_RESULTS_KEY);
             if (savedResults != null) {
                 mSearchResults = Arrays.asList(savedResults);
@@ -261,9 +258,6 @@ public class SoundCloudFragment extends Fragment
 //        else
         if (mSearchResults != null){
             displayResults();
-            if (mIsPlaying) {
-                mRecyclerViewAdapter.selectItem(mLastSelectedPos);
-            }
         }
 
         mSpinner = (Spinner) view.findViewById(R.id.search_type_spinner);
@@ -277,7 +271,7 @@ public class SoundCloudFragment extends Fragment
         mRefreshView.setOnRefreshListener(new SwipeRefreshLayout.OnRefreshListener() {
             @Override
             public void onRefresh() {
-                handleSearch(mLastSearchedQuery);
+                setResultsTypeAndSearch(mLastSearchedQuery, true);
                 mRefreshView.setRefreshing(false);
             }
         });
@@ -445,12 +439,22 @@ public class SoundCloudFragment extends Fragment
     }
 
     public void handleSearch(String query) {
-        Log.i(LOG_TAG, "handleSearch: Got query: " + query);
+        if (MediaPlayerService.sCurrentClient == SOUNDCLOUD_FRAGMENT_CLIENT_ID) {
+            if (MediaPlayerService.sIsPlaying)
+                mStopPlayOnNextPause = true;
+            else
+                sendServiceBroadcast(SERVICE_ACTION_STOP);
+        }
+        setResultsTypeAndSearch(query, false);
+    }
+
+    private void setResultsTypeAndSearch(String query, boolean isRefresh){
         mLastSearchedQuery = query;
         if (mSpinner == null)
             return;
 //        SCAsyncTask scAsyncTask =
         new SCAsyncTask().execute(String.valueOf(mSpinner.getSelectedItemPosition()), query);
+
     }
 
     private void handleSCResponse(Response<List<Track>> response){
@@ -460,8 +464,10 @@ public class SoundCloudFragment extends Fragment
         }
         else if (response.isSuccessful()) {
             mSearchResults = response.body();
-//            Log.i(LOG_TAG, "onResponse: got tracks");
-            displayResults();
+            if (mSearchResults == null)
+                showEmptyView();
+            else
+                displayResults();
 //            TODO mSearchview.clearFocus()
         } else {
             Log.e(LOG_TAG, "onResponse: " + "Error code " + response.code());
@@ -471,8 +477,19 @@ public class SoundCloudFragment extends Fragment
     }
 
     private void displayResults(){
+        if (!mStopPlayOnNextPause && MediaPlayerService.sCurrentClient == SOUNDCLOUD_FRAGMENT_CLIENT_ID) {
+            mLastSelectedPos = MediaPlayerService.sCurrentClientItemPos;
+            mIsPlaying = MediaPlayerService.sIsPlaying;
+        }
+        else {
+            mLastSelectedPos = -1;
+            mIsPlaying = false;
+        }
         mRecyclerViewAdapter = new SoundCloudRecyclerViewAdapter(getActivity(), this, mSearchResults);
         mRecyclerView.setAdapter(mRecyclerViewAdapter);
+        if (mIsPlaying) {
+            mRecyclerViewAdapter.selectItem(mLastSelectedPos);
+        }
     }
 
     private class SCAsyncTask extends AsyncTask<String, Void, Response<List<Track>>> {
@@ -529,6 +546,11 @@ public class SoundCloudFragment extends Fragment
 //                mRecyclerView.getChildAt(itemPosToSelect)
             }
             else if (intent.getAction().equals(ACTION_PAUSE)){
+                if (mStopPlayOnNextPause) {
+                    sendServiceBroadcast(SERVICE_ACTION_STOP);
+                    mStopPlayOnNextPause = false;
+                    return;
+                }
                 playbackStopped();
                 refreshOrBind();
             }
