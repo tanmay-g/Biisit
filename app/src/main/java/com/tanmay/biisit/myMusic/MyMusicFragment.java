@@ -637,8 +637,18 @@ public class MyMusicFragment extends Fragment
         }
 
         private void refreshOrBind(){
-            if (mServiceBound)
+            if (mServiceBound) {
                 mController.show();
+                if (MediaPlayerService.sCurrentClient == MY_MUSIC_FRAGMENT_CLIENT_ID && mLastSelectedPos != MediaPlayerService.sCurrentClientItemPos) {
+                    mLastSelectedPos = MediaPlayerService.sCurrentClientItemPos;
+                    if (mIsPlaying)
+                        playbackStopped();
+//                    if (mIsPlaying != MediaPlayerService.sIsPlaying)
+                        mIsPlaying = MediaPlayerService.sIsPlaying;
+                    if (mIsPlaying)
+                        playbackStarted(mLastSelectedPos);
+                }
+            }
             else
                 getActivity().bindService(new Intent(getActivity(), MediaPlayerService.class), mServiceConn, Context.BIND_AUTO_CREATE);
         }

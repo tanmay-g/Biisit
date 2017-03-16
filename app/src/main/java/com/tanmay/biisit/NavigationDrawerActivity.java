@@ -41,6 +41,11 @@ public class NavigationDrawerActivity extends AppCompatActivity
     private static final String SOUNDCLOUD_FRAGMENT_TAG = "SoundCloud";
     private static final String MY_MUSIC_FRAGMENT_TAG = "MyMusic";
     private static final String TITLE_STATE_KEY = "TITLE_STATE_KEY";
+
+    public static final String FRAGMENT_TO_LAUNCH = "FRAGMENT_TO_LAUNCH";
+    public static final int MY_MUSIC_FRAGMENT = 1;
+    public static final int SOUNDCLOUD_FRAGMENT = 2;
+
     NavigationView mNavigationView;
 
     MyMusicFragment mMyMusicFragment;
@@ -122,6 +127,20 @@ public class NavigationDrawerActivity extends AppCompatActivity
             if (mSoundCloudFragment != null){
                 mSoundCloudFragment.handleSearch(query);
             }
+        }
+        else if (intent.hasExtra(FRAGMENT_TO_LAUNCH)){
+            switch (intent.getIntExtra(FRAGMENT_TO_LAUNCH, -1)){
+                case MY_MUSIC_FRAGMENT:{
+                    onNavigationItemSelected(mNavigationView.getMenu().getItem(0));
+                    break;
+                }
+                case SOUNDCLOUD_FRAGMENT:{
+                    onNavigationItemSelected(mNavigationView.getMenu().getItem(1));
+                    break;
+                }
+                default:
+            }
+
         }
     }
 

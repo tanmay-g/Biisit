@@ -17,15 +17,16 @@
         <activity
             android:name=".NavigationDrawerActivity"
             android:label="@string/app_name"
-            android:theme="@style/AppTheme.NoActionBar"
             android:launchMode="singleTop"
-            >
-            <meta-data android:name="android.app.searchable"
-                       android:resource="@xml/searchable_config"/>
+            android:theme="@style/AppTheme.NoActionBar">
+            <meta-data
+                android:name="android.app.searchable"
+                android:resource="@xml/searchable_config"/>
 
             <intent-filter>
                 <action android:name="android.intent.action.MAIN"/>
-                <action android:name="android.intent.action.SEARCH" />
+                <action android:name="android.intent.action.SEARCH"/>
+
                 <category android:name="android.intent.category.LAUNCHER"/>
             </intent-filter>
         </activity>
@@ -56,6 +57,30 @@
                 <!--<action android:name="com.tanmay.biisit.ACTION_PAUSE"/>-->
             <!--</intent-filter>-->
         <!--</receiver>-->
+
+        <receiver android:name=".myMusic.widget.MyMusicWidgetProvider">
+            <intent-filter>
+                <action android:name="android.appwidget.action.APPWIDGET_UPDATE"/>
+                <action android:name="com.tanmay.biisit.ACTION_PLAY"/>
+                <action android:name="com.tanmay.biisit.ACTION_PAUSE"/>
+                <action android:name="com.tanmay.biisit.ACTION_STOP"/>
+                <action android:name="com.tanmay.biisit.ACTION_REDRAW"/>
+                <!--<action android:name="com.tanmay.biisit.SERVICE_ACTION_PAUSE"/>-->
+                <!--<action android:name="com.example.android.stackwidget.TOAST_ACTION"/>-->
+                <!--<action android:name="com.tanmay.biisit.SERVICE_ACTION_START_PLAY"/>-->
+            </intent-filter>
+
+            <meta-data
+                android:name="android.appwidget.provider"
+                android:resource="@xml/my_music_widget_info"/>
+        </receiver>
+
+        <service
+            android:name=".myMusic.widget.MyMusicWidgetRemoteViewsService"
+            android:enabled="true"
+            android:exported="false"
+            android:permission="android.permission.BIND_REMOTEVIEWS">
+        </service>
     </application>
 
 </manifest>

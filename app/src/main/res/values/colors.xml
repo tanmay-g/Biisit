@@ -10,4 +10,5 @@
     <color name="white">#ffffff</color>
     <color name="activated">#eceff1</color>
     <color name="black">#000000</color>
+    <color name="secondary_text">#727272</color>
 </resources>

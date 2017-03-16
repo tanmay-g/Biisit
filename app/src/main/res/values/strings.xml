@@ -15,8 +15,10 @@
         <item>Keyword</item>
         <item>Tag</item>
     </string-array>
+    <string name="appwidget_text">EXAMPLE</string>
+    <string name="add_widget">Add widget</string>
     <!--<string-array name="sort_spinner_choice_values">-->
-        <!--<item>all</item>-->
-        <!--<item>only_fav</item>-->
+    <!--<item>all</item>-->
+    <!--<item>only_fav</item>-->
     <!--</string-array>-->
 </resources>
