@@ -96,6 +96,7 @@ public class SoundCloudFragment extends Fragment
     private List<Track> mSearchResults = null;
     private SwipeRefreshLayout mRefreshView;
     private String mLastSearchedQuery;
+    private SearchView mSearchView;
 
     /**
      * Mandatory empty constructor for the fragment manager to instantiate the
@@ -278,11 +279,24 @@ public class SoundCloudFragment extends Fragment
 
         // Get the SearchView and set the searchable configuration
         SearchManager searchManager = (SearchManager) getActivity().getSystemService(Context.SEARCH_SERVICE);
-        SearchView searchView = (SearchView) view.findViewById(R.id.search_view);
+        mSearchView = (SearchView) view.findViewById(R.id.search_view);
         // Assumes current activity is the searchable activity
-        searchView.setSearchableInfo(searchManager.getSearchableInfo(getActivity().getComponentName()));
-        searchView.setIconifiedByDefault(false); // Do not iconify the widget; expand it by default
-
+        mSearchView.setSearchableInfo(searchManager.getSearchableInfo(getActivity().getComponentName()));
+        mSearchView.setIconifiedByDefault(false); // Do not iconify the widget; expand it by default
+        mSearchView.setOnQueryTextFocusChangeListener(new View.OnFocusChangeListener() {
+            @Override
+            public void onFocusChange(View v, boolean hasFocus) {
+                if (mController == null)
+                    return;
+                if (hasFocus){
+                    mController.actuallyHide();
+                }
+                else {
+                    if (mIsPlaying)
+                        mController.show();
+                }
+            }
+        });
         return view;
     }
 
@@ -468,6 +482,7 @@ public class SoundCloudFragment extends Fragment
                 showEmptyView();
             else
                 displayResults();
+            mSearchView.clearFocus();
 //            TODO mSearchview.clearFocus()
         } else {
             Log.e(LOG_TAG, "onResponse: " + "Error code " + response.code());

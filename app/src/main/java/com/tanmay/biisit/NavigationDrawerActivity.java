@@ -197,6 +197,7 @@ public class NavigationDrawerActivity extends AppCompatActivity
         int id = item.getItemId();
 
         if (id == R.id.my_music) {
+//            getWindow().setSoftInputMode(WindowManager.LayoutParams.SOFT_INPUT_STATE_ALWAYS_HIDDEN);
             if (ContextCompat.checkSelfPermission(this, Manifest.permission.READ_EXTERNAL_STORAGE) != PackageManager.PERMISSION_GRANTED) {
                 checkPermission();
                 return false;
@@ -210,6 +211,7 @@ public class NavigationDrawerActivity extends AppCompatActivity
             getSupportFragmentManager().beginTransaction().replace(R.id.content_navigation_drawer, mMyMusicFragment, MY_MUSIC_FRAGMENT_TAG).commit();
         }
         else if (id == R.id.soundcloud) {
+//            getWindow().setSoftInputMode(WindowManager.LayoutParams.SOFT_INPUT_STATE_ALWAYS_HIDDEN);
             try {
                 mMyMusicFragmentState = getSupportFragmentManager().saveFragmentInstanceState(mMyMusicFragment);
             }
