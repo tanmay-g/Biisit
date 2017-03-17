@@ -35,7 +35,7 @@ public class MyMusicWidgetProvider extends AppWidgetProvider {
         RemoteViews views = new RemoteViews(context.getPackageName(), R.layout.my_music_widget);
 
         views.setRemoteAdapter(R.id.widget_list, new Intent(context, MyMusicWidgetRemoteViewsService.class));
-        views.setOnClickPendingIntent(R.id.widget, PendingIntent.getActivity(context, 0, intentToLaunchActivity, 0));
+        views.setOnClickPendingIntent(R.id.widget, PendingIntent.getActivity(context, 0, intentToLaunchActivity, PendingIntent.FLAG_CANCEL_CURRENT));
 
 //        Intent serviceBroadcastIntent = new Intent(context, MediaPlayerService.class);
         Intent serviceBroadcastIntent = new Intent();

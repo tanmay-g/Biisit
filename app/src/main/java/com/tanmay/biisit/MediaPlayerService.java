@@ -30,6 +30,9 @@ import com.tanmay.biisit.soundCloud.pojo.Track;
 
 import java.io.IOException;
 
+import static com.tanmay.biisit.NavigationDrawerActivity.FRAGMENT_TO_LAUNCH;
+import static com.tanmay.biisit.NavigationDrawerActivity.MY_MUSIC_FRAGMENT;
+import static com.tanmay.biisit.NavigationDrawerActivity.SOUNDCLOUD_FRAGMENT;
 import static com.tanmay.biisit.myMusic.MyMusicFragment.MY_MUSIC_FRAGMENT_CLIENT_ID;
 import static com.tanmay.biisit.soundCloud.SoundCloudFragment.SOUNDCLOUD_FRAGMENT_CLIENT_ID;
 
@@ -454,6 +457,13 @@ public class MediaPlayerService extends Service implements MediaPlayer.OnComplet
             play_pauseAction = playbackAction(0);
         }
 
+        PendingIntent stopIntent = playbackAction(2);
+        int stopActionDrawable = R.drawable.ic_media_stop;
+
+        Intent intentToLaunchActivity = new Intent(this, NavigationDrawerActivity.class);
+        Log.i(LOG_TAG, "buildNotification: setting fragment to start to: " + (sCurrentClient == SOUNDCLOUD_FRAGMENT_CLIENT_ID ? SOUNDCLOUD_FRAGMENT : MY_MUSIC_FRAGMENT));
+        intentToLaunchActivity.putExtra(FRAGMENT_TO_LAUNCH, sCurrentClient == SOUNDCLOUD_FRAGMENT_CLIENT_ID ? SOUNDCLOUD_FRAGMENT : MY_MUSIC_FRAGMENT);
+        PendingIntent activityIntent = PendingIntent.getActivity(this, 0, intentToLaunchActivity, PendingIntent.FLAG_CANCEL_CURRENT);
 
         Bitmap largeIcon = mMetadata.getBitmap(MediaMetadataCompat.METADATA_KEY_ALBUM_ART);
 
@@ -476,9 +486,11 @@ public class MediaPlayerService extends Service implements MediaPlayer.OnComplet
                 .setContentText(mMetadata.getString(MediaMetadataCompat.METADATA_KEY_ARTIST))
                 .setContentInfo(mMetadata.getString(MediaMetadataCompat.METADATA_KEY_ALBUM))
                 .setContentTitle(mMetadata.getString(MediaMetadataCompat.METADATA_KEY_TITLE))
+                .setContentIntent(activityIntent)
                 // Add playback actions
 //                .addAction(android.R.drawable.ic_media_previous, "previous", playbackAction(3))
-                .addAction(notificationAction, "pause", play_pauseAction);
+                .addAction(notificationAction, "pause", play_pauseAction)
+                .addAction(stopActionDrawable, "stop", stopIntent);
 //                .addAction(android.R.drawable.ic_media_next, "next", playbackAction(2));
 
 //        ((NotificationManager) getSystemService(Context.NOTIFICATION_SERVICE)).notify(NOTIFICATION_ID, notificationBuilder.build());
@@ -501,6 +513,10 @@ public class MediaPlayerService extends Service implements MediaPlayer.OnComplet
             case 1:
                 // Pause
                 playbackAction.setAction(ACTION_PAUSE);
+                return PendingIntent.getService(this, actionNumber, playbackAction, 0);
+            case 2:
+                // Stop
+                playbackAction.setAction(ACTION_STOP);
                 return PendingIntent.getService(this, actionNumber, playbackAction, 0);
             default:
                 break;
@@ -558,7 +574,7 @@ public class MediaPlayerService extends Service implements MediaPlayer.OnComplet
 
 
     private void getBitmapFromURL(String imageUrl, final Track track) {
-        Log.i(LOG_TAG, "getBitmapFromURL: Starting bitmap load");
+        Log.i(LOG_TAG, "getBitmapFromURL: Starting bitmap load: " + imageUrl);
         Picasso.with(this)
                 .load(imageUrl)
                 .into(new Target() {
