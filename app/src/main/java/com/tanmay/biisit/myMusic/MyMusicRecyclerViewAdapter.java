@@ -23,6 +23,8 @@ import com.google.firebase.database.FirebaseDatabase;
 import com.google.firebase.database.ValueEventListener;
 import com.tanmay.biisit.R;
 
+import java.util.Arrays;
+
 import static com.tanmay.biisit.R.id.checkBox;
 
 
@@ -34,6 +36,7 @@ class MyMusicRecyclerViewAdapter extends RecyclerView.Adapter<MyMusicRecyclerVie
 
     private static final String LOG_TAG = MyMusicRecyclerViewAdapter.class.getSimpleName();
     private final Cursor mValues;
+    private int [] mExternalPositions;
     private final Context mContext;
     private final int mTitleColumn;
     private final int mIdColumn;
@@ -53,6 +56,7 @@ class MyMusicRecyclerViewAdapter extends RecyclerView.Adapter<MyMusicRecyclerVie
     private boolean mIsLoggedIn = false;
     private String mUserId;
     private FirebaseAuth.AuthStateListener mAuthListener;
+    private int mSelectedExternalPosition = -2;
 
     @Override
     public void onAttachedToRecyclerView(RecyclerView recyclerView) {
@@ -66,7 +70,7 @@ class MyMusicRecyclerViewAdapter extends RecyclerView.Adapter<MyMusicRecyclerVie
         FirebaseAuth.getInstance().removeAuthStateListener(mAuthListener);
     }
 
-    MyMusicRecyclerViewAdapter(Context context, OnListFragmentInteractionListener listener, Cursor data, boolean onlyFav) {
+    MyMusicRecyclerViewAdapter(Context context, OnListFragmentInteractionListener listener, final Cursor data, boolean onlyFav) {
         mContext = context;
         mValues = data;
         mListener = listener;
@@ -82,11 +86,14 @@ class MyMusicRecyclerViewAdapter extends RecyclerView.Adapter<MyMusicRecyclerVie
                     (MediaStore.Audio.Media._ID);
             mArtistColumn = mValues.getColumnIndex
                     (MediaStore.Audio.Media.ARTIST);
+            mExternalPositions = new int[mValues.getCount()];
+            Arrays.fill(mExternalPositions, -1);
         }
         else  {
             mTitleColumn = 0;
             mIdColumn = 0;
             mArtistColumn = 0;
+            return;
         }
 
         mAuthListener = new FirebaseAuth.AuthStateListener() {
@@ -99,6 +106,26 @@ class MyMusicRecyclerViewAdapter extends RecyclerView.Adapter<MyMusicRecyclerVie
 //                    Log.d(LOG_TAG, "onAuthStateChanged:signed_in:" + mUserId);
                     mIsLoggedIn = true;
                     mSpecificUserDataReference = mUserInfoReference.child(mUserId);
+                    mSpecificUserDataReference.addListenerForSingleValueEvent(new ValueEventListener() {
+                        @Override
+                        public void onDataChange(DataSnapshot dataSnapshot) {
+//                                Log.i(LOG_TAG, "onDataChange: STARTING SET OF EXTERNAL VALS, with selected pos: " + mSelectedPosition + " and external selected pos: " + mSelectedExternalPosition);
+                            for (int i = 0; i < mValues.getCount(); i++) {
+                                mValues.moveToPosition(i);
+                                DataSnapshot c = dataSnapshot.child(String.valueOf((int) mValues.getLong(mIdColumn)));
+                                if (c.exists()) {
+                                    mExternalPositions[i] = c.getValue(int.class);
+                                    notifyItemChanged(i);
+                                }
+                            }
+//                                Log.i(LOG_TAG, "onDataChange: EXTERNAL POS VALUES SET");
+                        }
+
+                        @Override
+                        public void onCancelled(DatabaseError databaseError) {
+
+                        }
+                    });
                 } else {
                     // User is signed out
 //                    Log.d(LOG_TAG, "onAuthStateChanged:signed_out");
@@ -133,31 +160,22 @@ class MyMusicRecyclerViewAdapter extends RecyclerView.Adapter<MyMusicRecyclerVie
                 mValues.getString(mArtistColumn)
         );
 
-        if (position == mSelectedPosition){
+//        Log.i(LOG_TAG, "onBindViewHolder: position: " + position + ", mSelectedPosition: "+mSelectedPosition+", mExternalPositions[position]: "+mExternalPositions[position]+", mSelectedExternalPosition:" + mSelectedExternalPosition);
+        if (position == mSelectedPosition || mExternalPositions[position] == mSelectedExternalPosition){
+//            Log.i(LOG_TAG, "onBindViewHolder: setting selected");
             holder.mView.setSelected(true);
             mSelectedView = holder.mView;
             holder.mButton.setImageResource(R.drawable.ic_pause);
         }
-        else
+        else {
+//            Log.i(LOG_TAG, "onBindViewHolder: setting not selected");
+            holder.mButton.setImageResource(R.drawable.ic_play);
             holder.mView.setSelected(false);
+        }
 
         if (mIsLoggedIn) {
             holder.mStar.setEnabled(true);
-            mSpecificUserDataReference.child(holder.mIdView.getText().toString()).addListenerForSingleValueEvent(new ValueEventListener() {
-                @Override
-                public void onDataChange(DataSnapshot dataSnapshot) {
-//                Log.i(LOG_TAG, "onDataChange: Setting star at " + holder.getAdapterPosition() + " to " + dataSnapshot.exists() + " for key " + dataSnapshot.getKey());
-                    boolean valExists = dataSnapshot.exists();
-                    holder.mStar.setChecked(valExists);
-                    if (valExists)
-                        holder.mActualPos = dataSnapshot.getValue(int.class);
-                }
-
-                @Override
-                public void onCancelled(DatabaseError databaseError) {
-
-                }
-            });
+            holder.mStar.setChecked(mExternalPositions[position] != -1);
         }
         else {
 //            holder.mStar.setClickable(false);
@@ -176,8 +194,13 @@ class MyMusicRecyclerViewAdapter extends RecyclerView.Adapter<MyMusicRecyclerVie
     }
 
     void selectItem(int position){
-        mSelectedPosition = position;
-        notifyItemChanged(mSelectedPosition);
+        int actualPos = mOnlyFav ? getInternalPos(position) : position;
+//        Log.i(LOG_TAG, "selectItem: Got asked to select: " + position + ". Will actually select " + actualPos);
+        mSelectedPosition = actualPos;
+        if (actualPos != -1)
+            notifyItemChanged(mSelectedPosition);
+        else
+            mSelectedExternalPosition = position;
     }
 
     void deselectCurrentItem(){
@@ -194,15 +217,23 @@ class MyMusicRecyclerViewAdapter extends RecyclerView.Adapter<MyMusicRecyclerVie
     }
 
     Uri getUriAtPos(int position){
-        mValues.moveToPosition(position);
-        Uri mediaUri=
-                ContentUris
-                        .withAppendedId(MediaStore.Audio.Media.EXTERNAL_CONTENT_URI,
-                                mValues.getInt(mIdColumn));
-        return mediaUri;
-
+        int actualPos = mOnlyFav ? getInternalPos(position) : position;
+        try {
+            mValues.moveToPosition(actualPos);
+            return ContentUris.withAppendedId(MediaStore.Audio.Media.EXTERNAL_CONTENT_URI, mValues.getInt(mIdColumn));
+        }
+        catch (Exception e){
+            return null;
+        }
     }
-
+    private int getInternalPos(int externalPos){
+        for (int i = 0; i < mValues.getCount(); i++) {
+            if (mExternalPositions[i] == externalPos) {
+                return i;
+            }
+        }
+        return -1;
+    }
     interface OnListFragmentInteractionListener {
         void onListFragmentInteraction(Uri mediaUriToPlay, boolean start, int position);
 //        void onStarToggled();
@@ -215,7 +246,6 @@ class MyMusicRecyclerViewAdapter extends RecyclerView.Adapter<MyMusicRecyclerVie
         final TextView mArtistView;
         final ImageView mButton;
         final CheckBox mStar;
-        int mActualPos;
 
         private final View.OnClickListener mainListener = new View.OnClickListener() {
             @Override
@@ -243,7 +273,7 @@ class MyMusicRecyclerViewAdapter extends RecyclerView.Adapter<MyMusicRecyclerVie
                                         mValues.getInt(mIdColumn));
                 if (mOnlyFav) {
 //                    Log.i(LOG_TAG, "onClick: telling fragment about click at the actual " + mActualPos);
-                    mListener.onListFragmentInteraction(mediaUri, !isAlreadyRunning, mActualPos);
+                    mListener.onListFragmentInteraction(mediaUri, !isAlreadyRunning, mExternalPositions[adapterPosition]);
                 } else {
 //                    Log.i(LOG_TAG, "onClick: telling fragment about click at " + adapterPosition);
                     mListener.onListFragmentInteraction(mediaUri, !isAlreadyRunning, adapterPosition);
@@ -281,10 +311,6 @@ class MyMusicRecyclerViewAdapter extends RecyclerView.Adapter<MyMusicRecyclerVie
             mStar = ((CheckBox) mView.findViewById(checkBox));
             mView.setOnClickListener(mainListener);
             mStar.setOnClickListener(starListener);
-//            if (mOnlyFav)
-//                mActualPos = getAdapterPosition();
-//            else
-                mActualPos = -1;
         }
 
         @Override

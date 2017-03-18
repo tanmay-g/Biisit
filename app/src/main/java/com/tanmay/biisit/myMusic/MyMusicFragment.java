@@ -33,7 +33,6 @@ import android.widget.AdapterView;
 import android.widget.ArrayAdapter;
 import android.widget.MediaController;
 import android.widget.Spinner;
-import android.widget.Toast;
 
 import com.google.firebase.auth.FirebaseAuth;
 import com.google.firebase.auth.FirebaseUser;
@@ -348,7 +347,8 @@ public class MyMusicFragment extends Fragment
                     mSpecificUserDataReference.addValueEventListener(mUserValueEventListener);
                 else
                     showEmptyView();
-            } else {
+            }
+            else {
                 if (mSpecificUserDataReference != null)
                     mSpecificUserDataReference.removeEventListener(mUserValueEventListener);
 //                Log.i(LOG_TAG, "respondToSpinnerValueChanage: Adding one time listener");
@@ -524,16 +524,16 @@ public class MyMusicFragment extends Fragment
     }
 
     private void playbackStopped() {
-        Toast.makeText(getActivity(), "Playback stopped", Toast.LENGTH_SHORT).show();
+//        Log.i(LOG_TAG, "playbackStopped");
         mRecyclerViewAdapter.deselectCurrentItem();
         mIsPlaying = false;
     }
     private void playbackStarted(int pos) {
-        Toast.makeText(getActivity(), "Playback started at " + pos, Toast.LENGTH_SHORT).show();
+//        Log.i(LOG_TAG, "playbackStarted: at " + pos);
         mRecyclerViewAdapter.selectItem(pos);
         mIsPlaying = true;
         Uri newUri = mRecyclerViewAdapter.getUriAtPos(pos);
-        if (!newUri.equals(mCurrentUri))
+        if (newUri != null && !newUri.equals(mCurrentUri))
             mCurrentUri = newUri;
     }
 

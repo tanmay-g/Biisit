@@ -5,7 +5,6 @@ import android.content.Intent;
 import android.database.Cursor;
 import android.net.Uri;
 import android.provider.MediaStore;
-import android.util.Log;
 import android.widget.AdapterView;
 import android.widget.RemoteViews;
 import android.widget.RemoteViewsService;
@@ -76,7 +75,7 @@ public class MyMusicWidgetRemoteViewsService extends RemoteViewsService {
 
             @Override
             public RemoteViews getViewAt(int position) {
-                Log.i(LOG_TAG, "getViewAt: " + position);
+//                Log.i(LOG_TAG, "getViewAt: " + position);
                 if (position == AdapterView.INVALID_POSITION ||
                         data == null || !data.moveToPosition(position)) {
                     return null;

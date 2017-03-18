@@ -438,7 +438,7 @@ public class MediaPlayerService extends Service implements MediaPlayer.OnComplet
 
             @Override
             public void onSeekTo(long position) {
-                Log.i(LOG_TAG, "seekTo in mediaSessionCallback");
+//                Log.i(LOG_TAG, "seekTo in mediaSessionCallback");
                 super.onSeekTo(position);
             }
         });
@@ -464,7 +464,7 @@ public class MediaPlayerService extends Service implements MediaPlayer.OnComplet
         int stopActionDrawable = R.drawable.ic_media_stop;
 
         Intent intentToLaunchActivity = new Intent(this, NavigationDrawerActivity.class);
-        Log.i(LOG_TAG, "buildNotification: setting fragment to start to: " + (sCurrentClient == SOUNDCLOUD_FRAGMENT_CLIENT_ID ? SOUNDCLOUD_FRAGMENT : MY_MUSIC_FRAGMENT));
+//        Log.i(LOG_TAG, "buildNotification: setting fragment to start to: " + (sCurrentClient == SOUNDCLOUD_FRAGMENT_CLIENT_ID ? SOUNDCLOUD_FRAGMENT : MY_MUSIC_FRAGMENT));
         intentToLaunchActivity.putExtra(FRAGMENT_TO_LAUNCH, sCurrentClient == SOUNDCLOUD_FRAGMENT_CLIENT_ID ? SOUNDCLOUD_FRAGMENT : MY_MUSIC_FRAGMENT);
         PendingIntent activityIntent = PendingIntent.getActivity(this, 0, intentToLaunchActivity, PendingIntent.FLAG_CANCEL_CURRENT);
 
