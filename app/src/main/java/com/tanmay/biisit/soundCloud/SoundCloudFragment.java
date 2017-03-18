@@ -232,6 +232,7 @@ public class SoundCloudFragment extends Fragment
         mProgressDialog.setIndeterminate(true);
         mProgressDialog.setProgressStyle(ProgressDialog.STYLE_SPINNER);
         mProgressDialog.setMessage("Fetching...");
+        mProgressDialog.setCanceledOnTouchOutside(false);
 
         mController = new CustomMediaController(getActivity(), true);
         mController.setMediaPlayer(SoundCloudFragment.this);
@@ -255,6 +256,12 @@ public class SoundCloudFragment extends Fragment
 //                mRecyclerViewAdapter.selectItem(mLastSelectedPos);
 //            }
 //            respondToSpinnerValueChanage();
+        }
+        else if (MediaPlayerService.sCurrentClient == SOUNDCLOUD_FRAGMENT_CLIENT_ID){
+            if (MediaPlayerService.sIsPlaying)
+                mStopPlayOnNextPause = true;
+            else
+                sendServiceBroadcast(SERVICE_ACTION_STOP);
         }
 //        else
         if (mSearchResults != null){
