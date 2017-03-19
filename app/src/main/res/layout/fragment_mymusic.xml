@@ -9,13 +9,6 @@
     android:fitsSystemWindows="true"
     tools:context="com.tanmay.biisit.NavigationDrawerActivity">
 
-    <View
-        android:id="@+id/controller_anchor"
-        android:layout_width="match_parent"
-        android:layout_height="20dp"
-        android:layout_gravity="bottom"
-        android:visibility="gone"/>
-
     <android.support.v7.widget.RecyclerView
         android:id="@+id/recyclerView"
         android:clipToPadding="false"
@@ -26,6 +19,14 @@
         tools:context="com.tanmay.biisit.myMusic.MyMusicFragment"
         tools:listitem="@layout/fragment_mymusic_list_item"
         />
+    <TextView
+        android:layout_width="match_parent"
+        android:layout_height="match_parent"
+        android:id="@+id/empty_view"
+        android:text="@string/my_music_emptyview_text"
+        android:visibility="gone"
+        android:gravity="center"
+        app:layout_anchor="@id/recyclerView"/>
 
     <android.support.design.widget.AppBarLayout
         android:layout_width="match_parent"

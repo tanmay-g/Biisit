@@ -28,6 +28,7 @@ import android.widget.ArrayAdapter;
 import android.widget.MediaController;
 import android.widget.SearchView;
 import android.widget.Spinner;
+import android.widget.TextView;
 import android.widget.Toast;
 
 import com.tanmay.biisit.CustomMediaController;
@@ -97,6 +98,7 @@ public class SoundCloudFragment extends Fragment
     private SwipeRefreshLayout mRefreshView;
     private String mLastSearchedQuery;
     private SearchView mSearchView;
+    private TextView mEmptyView;
 
     /**
      * Mandatory empty constructor for the fragment manager to instantiate the
@@ -217,6 +219,7 @@ public class SoundCloudFragment extends Fragment
                 mRecyclerView.setLayoutManager(new LinearLayoutManager(context));
 //            mRecyclerView.setAdapter(new SoundCloudRecyclerViewAdapter(getActivity(), this, null, false));
         }
+        mEmptyView = (TextView) view.findViewById(R.id.empty_view);
 
         Toolbar toolbar = (Toolbar) view.findViewById(R.id.toolbar_sc);
         ((AppCompatActivity) getActivity()).setSupportActionBar(toolbar);
@@ -265,7 +268,10 @@ public class SoundCloudFragment extends Fragment
         }
 //        else
         if (mSearchResults != null){
-            displayResults();
+            if (mSearchResults.isEmpty())
+                showEmptyView();
+            else
+                displayResults();
         }
 
         mSpinner = (Spinner) view.findViewById(R.id.search_type_spinner);
@@ -307,12 +313,18 @@ public class SoundCloudFragment extends Fragment
         return view;
     }
 
-    private void showEmptyView(){
+    private void showEmptyView(int message){
         //            TODO set empty view visible, and remove the below
         if (mRecyclerView != null) {
             mRecyclerViewAdapter = new SoundCloudRecyclerViewAdapter(getActivity(), this, null);
+            mEmptyView.setText(message);
+            mEmptyView.setVisibility(View.VISIBLE);
             mRecyclerView.setAdapter(mRecyclerViewAdapter);
         }
+    }
+
+    private void showEmptyView(){
+        showEmptyView(R.string.soundcloud_emptyview_text);
     }
 
     private void sendServiceBroadcast(String action){
@@ -481,11 +493,11 @@ public class SoundCloudFragment extends Fragment
     private void handleSCResponse(Response<List<Track>> response){
         if (response == null){
             ((NavigationDrawerActivity)getActivity()).showSnackbar("Network Error");
-            showEmptyView();
+            showEmptyView(R.string.soundcloud_emptyview_text_nonet);
         }
         else if (response.isSuccessful()) {
             mSearchResults = response.body();
-            if (mSearchResults == null)
+            if (mSearchResults == null || mSearchResults.isEmpty())
                 showEmptyView();
             else
                 displayResults();
@@ -494,7 +506,7 @@ public class SoundCloudFragment extends Fragment
         } else {
             Log.e(LOG_TAG, "onResponse: " + "Error code " + response.code());
             ((NavigationDrawerActivity)getActivity()).showSnackbar("Error while running search");
-            showEmptyView();
+            showEmptyView(R.string.soundcloud_emptyview_text_nonet);
         }
     }
 
@@ -508,6 +520,7 @@ public class SoundCloudFragment extends Fragment
             mIsPlaying = false;
         }
         mRecyclerViewAdapter = new SoundCloudRecyclerViewAdapter(getActivity(), this, mSearchResults);
+        mEmptyView.setVisibility(View.GONE);
         mRecyclerView.setAdapter(mRecyclerViewAdapter);
         if (mIsPlaying) {
             mRecyclerViewAdapter.selectItem(mLastSelectedPos);

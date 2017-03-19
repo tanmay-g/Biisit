@@ -45,6 +45,14 @@
             tools:context="com.tanmay.biisit.soundCloud.SoundCloudFragment"
             tools:listitem="@layout/fragment_soundcloud_list_item"/>
         </android.support.v4.widget.SwipeRefreshLayout>
+        <TextView
+            android:layout_width="match_parent"
+            android:layout_height="match_parent"
+            android:id="@+id/empty_view"
+            android:text="@string/soundcloud_emptyview_text_nosearch"
+            android:visibility="visible"
+            android:gravity="center"
+            app:layout_anchor="@id/swipe_refresh_layout"/>
 
         <android.support.design.widget.AppBarLayout
             android:layout_width="match_parent"

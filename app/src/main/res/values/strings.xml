@@ -19,10 +19,14 @@
     <string name="add_widget">Add widget</string>
     <string name="logged_out_user_display_name">Biisit User</string>
     <string name="my_music_title">My Music</string>
-    <string name="soundcloud_title">SoundCloud</string>
+    <string name="soundcloud_title">SoundCloud</string >
     <string name="account_section_subheader">Account</string>
     <string name="sign_in_title">Sign In</string>
-    <string name="My_music_emptyview_text">No Music on device!</string>
+    <string name="my_music_emptyview_text">No Music on device!</string>
+    <string name="my_music_no_fav_emptyview_text">No favourites set!</string>
+    <string name="soundcloud_emptyview_text">No results for that search!\nTry something else.</string>
+    <string name="soundcloud_emptyview_text_nosearch">Try a search to see results here!</string>
+    <string name="soundcloud_emptyview_text_nonet">Couldn\'t fetch search results.\nPlease check the network connection and try again.</string>
     <string name="biisit_logo_label">Biisit Logo</string>
     <string name="tap_to_play_message">Tap to Play</string>
     <string name="tap_to_pause_message">Tap to Pause</string>

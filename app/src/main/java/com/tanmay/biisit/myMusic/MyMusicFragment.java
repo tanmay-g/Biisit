@@ -33,6 +33,7 @@ import android.widget.AdapterView;
 import android.widget.ArrayAdapter;
 import android.widget.MediaController;
 import android.widget.Spinner;
+import android.widget.TextView;
 
 import com.google.firebase.auth.FirebaseAuth;
 import com.google.firebase.auth.FirebaseUser;
@@ -108,6 +109,7 @@ public class MyMusicFragment extends Fragment
     private String mUserId;
     private FirebaseAuth.AuthStateListener mAuthListener;
     private boolean mIsPlaying = false;
+    private TextView mEmptyView;
 
     /**
      * Mandatory empty constructor for the fragment manager to instantiate the
@@ -219,6 +221,7 @@ public class MyMusicFragment extends Fragment
 //            }
 //            mRecyclerView.setAdapter(new MyMusicRecyclerViewAdapter(getActivity(), this, null, false));
         }
+        mEmptyView = (TextView) view.findViewById(R.id.empty_view);
 
         Toolbar toolbar = (Toolbar) view.findViewById(R.id.toolbar_mm);
         ((AppCompatActivity) getActivity()).setSupportActionBar(toolbar);
@@ -248,7 +251,7 @@ public class MyMusicFragment extends Fragment
                     }
 
                     if (newFavouriteIds.isEmpty())
-                        showEmptyView();
+                        showEmptyView(R.string.my_music_no_fav_emptyview_text);
                     else if (mFavouriteIds == null || !(mFavouriteIds.containsAll(newFavouriteIds) && newFavouriteIds.containsAll(mFavouriteIds))) {
                         mFavouriteIds = newFavouriteIds;
 //                    if (mOnlyFav || mFavouriteIds == null){
@@ -289,7 +292,7 @@ public class MyMusicFragment extends Fragment
                     mIsLoggedIn = false;
                     mFavouriteIds = null;
                     if (mOnlyFav){
-                        showEmptyView();
+                        showEmptyView(R.string.my_music_no_fav_emptyview_text);
                     }
                 }
             }
@@ -344,7 +347,7 @@ public class MyMusicFragment extends Fragment
                 if (mSpecificUserDataReference != null)
                     mSpecificUserDataReference.addValueEventListener(mUserValueEventListener);
                 else
-                    showEmptyView();
+                    showEmptyView(R.string.my_music_no_fav_emptyview_text);
             }
             else {
                 if (mSpecificUserDataReference != null)
@@ -359,7 +362,7 @@ public class MyMusicFragment extends Fragment
             initCursorLoader();
         }
         else
-            showEmptyView();
+            showEmptyView(R.string.my_music_no_fav_emptyview_text);
     }
 
     @Override
@@ -401,12 +404,18 @@ public class MyMusicFragment extends Fragment
 
     }
 
-    private void showEmptyView(){
-        //            TODO set empty view visible, and remove the below
+    private void showEmptyView(int message) {
         if (mRecyclerView != null) {
             mRecyclerViewAdapter = new MyMusicRecyclerViewAdapter(getActivity(), this, null, false);
             mRecyclerView.setAdapter(mRecyclerViewAdapter);
+            mEmptyView.setText(message);
+            mEmptyView.setVisibility(View.VISIBLE);
         }
+    }
+
+    private void showEmptyView(){
+        //            TODO set empty view visible, and remove the below
+        showEmptyView(R.string.my_music_emptyview_text);
     }
 
     @Override
@@ -436,14 +445,24 @@ public class MyMusicFragment extends Fragment
     public void onLoadFinished(Loader<Cursor> loader, Cursor data) {
         Log.i(LOG_TAG, "onLoadFinished: got cursor of size " + data.getCount());
         if (mRecyclerView != null) {
+            if (!data.moveToFirst()){
+                if (mOnlyFav)
+                    showEmptyView(R.string.my_music_no_fav_emptyview_text);
+                else
+                    showEmptyView();
+                return;
+            }
             mRecyclerViewAdapter = new MyMusicRecyclerViewAdapter(getActivity(), this, data, mOnlyFav);
+            mEmptyView.setVisibility(View.GONE);
             mRecyclerView.setAdapter(mRecyclerViewAdapter);
             if (mIsPlaying && mLastSelectedPos != -1){
                 playbackStarted(mLastSelectedPos);
             }
         }
-        else
-            Log.w(LOG_TAG, "onLoadFinished: not setting adapter as recycler view was not set" );
+        else {
+            Log.w(LOG_TAG, "onLoadFinished: not setting adapter as recycler view was not set");
+            showEmptyView();
+        }
     }
 
     @Override

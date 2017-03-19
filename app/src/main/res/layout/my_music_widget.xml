@@ -46,7 +46,7 @@
             android:gravity="center"
             android:fontFamily="sans-serif-condensed"
             android:textAppearance="?android:textAppearanceLarge"
-            android:text="@string/My_music_emptyview_text"
+            android:text="@string/my_music_emptyview_text"
             android:visibility="gone"/>
     </FrameLayout>
 

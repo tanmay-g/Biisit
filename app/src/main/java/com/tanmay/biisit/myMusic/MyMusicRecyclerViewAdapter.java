@@ -61,13 +61,15 @@ class MyMusicRecyclerViewAdapter extends RecyclerView.Adapter<MyMusicRecyclerVie
     @Override
     public void onAttachedToRecyclerView(RecyclerView recyclerView) {
         super.onAttachedToRecyclerView(recyclerView);
-        FirebaseAuth.getInstance().addAuthStateListener(mAuthListener);
+        if (mValues != null && mValues.moveToFirst())
+            FirebaseAuth.getInstance().addAuthStateListener(mAuthListener);
     }
 
     @Override
     public void onDetachedFromRecyclerView(RecyclerView recyclerView) {
         super.onDetachedFromRecyclerView(recyclerView);
-        FirebaseAuth.getInstance().removeAuthStateListener(mAuthListener);
+        if (mValues != null && mValues.moveToFirst())
+            FirebaseAuth.getInstance().removeAuthStateListener(mAuthListener);
     }
 
     MyMusicRecyclerViewAdapter(Context context, OnListFragmentInteractionListener listener, final Cursor data, boolean onlyFav) {
