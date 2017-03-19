@@ -166,11 +166,13 @@ class MyMusicRecyclerViewAdapter extends RecyclerView.Adapter<MyMusicRecyclerVie
             holder.mView.setSelected(true);
             mSelectedView = holder.mView;
             holder.mButton.setImageResource(R.drawable.ic_pause);
+            holder.mButton.setContentDescription(mContext.getString(R.string.tap_to_pause_message));
         }
         else {
 //            Log.i(LOG_TAG, "onBindViewHolder: setting not selected");
-            holder.mButton.setImageResource(R.drawable.ic_play);
+//            holder.mButton.setImageResource(R.drawable.ic_play);
             holder.mView.setSelected(false);
+//            holder.mButton.setContentDescription(mContext.getString(R.string.tap_to_play_message));
         }
 
         if (mIsLoggedIn) {
@@ -211,7 +213,9 @@ class MyMusicRecyclerViewAdapter extends RecyclerView.Adapter<MyMusicRecyclerVie
     private void unSelectSelectedView(){
         if (mSelectedView != null) {
             mSelectedView.setSelected(false);
-            ((ImageView)mSelectedView.findViewById(R.id.button)).setImageResource(R.drawable.ic_play);
+            ImageView button = (ImageView)mSelectedView.findViewById(R.id.button);
+            button.setImageResource(R.drawable.ic_play);
+            button.setContentDescription(mContext.getString(R.string.tap_to_play_message));
         }
         mSelectedPosition = -1;
     }
@@ -266,6 +270,9 @@ class MyMusicRecyclerViewAdapter extends RecyclerView.Adapter<MyMusicRecyclerVie
                 mView.setSelected(!isAlreadyRunning);
                 mButton.setImageResource(
                         !isAlreadyRunning ? R.drawable.ic_pause : R.drawable.ic_play
+                );
+                mButton.setContentDescription(
+                        !isAlreadyRunning ? mContext.getString(R.string.tap_to_pause_message) : mContext.getString(R.string.tap_to_play_message)
                 );
                 Uri mediaUri=
                         ContentUris

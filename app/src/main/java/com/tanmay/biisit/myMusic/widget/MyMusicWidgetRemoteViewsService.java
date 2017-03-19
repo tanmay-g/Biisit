@@ -98,10 +98,12 @@ public class MyMusicWidgetRemoteViewsService extends RemoteViewsService {
                 String action;
                 if (MediaPlayerService.sCurrentClient == MY_MUSIC_FRAGMENT_CLIENT_ID && MediaPlayerService.sIsPlaying && MediaPlayerService.sCurrentClientItemPos == position) {
                     views.setImageViewResource(R.id.button, R.drawable.ic_pause);
+                    views.setContentDescription(R.id.button, getString(R.string.tap_to_pause_message));
                     action = SERVICE_ACTION_PAUSE;
                 }
                 else{
                     views.setImageViewResource(R.id.button, R.drawable.ic_play);
+                    views.setContentDescription(R.id.button, getString(R.string.tap_to_play_message));
                     action = SERVICE_ACTION_START_PLAY;
                 }
                 final Intent fillInIntent = new Intent();

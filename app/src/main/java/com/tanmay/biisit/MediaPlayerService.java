@@ -481,7 +481,7 @@ public class MediaPlayerService extends Service implements MediaPlayer.OnComplet
 //                        .setShowActionsInCompactView(0, 1, 2))
                         .setShowActionsInCompactView(0))
                 // Set the Notification color
-//                .setColor(getResources().getColor(R.color.colorPrimary))
+//                .setColor(getResources().getColor(R.color.color_primary))
                 // Set the large and small icons
                 .setLargeIcon(largeIcon)
                 .setSmallIcon(android.R.drawable.stat_sys_headset)

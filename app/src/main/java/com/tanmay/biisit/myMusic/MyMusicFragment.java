@@ -77,9 +77,7 @@ public class MyMusicFragment extends Fragment
     private static final int CURSOR_LOADER_ID_ALL = 1;
     private static final int CURSOR_LOADER_ID_FAV = 2;
     private static final String SPINNER_SELECTED_KEY = "SPINNER_SELECTED_KEY";
-    private static final String SELECTED_POS_KEY = "SELECTED_POS_KEY";
     private static final String CURRENT_URI_KEY = "CURRENT_URI_KEY";
-    private static final String IS_PLAYING_KEY = "IS_PLAYING_KEY";
     private static final String FAV_ID_KEY = "FAV_ID_KEY";
 
     private boolean mServiceBound = false;

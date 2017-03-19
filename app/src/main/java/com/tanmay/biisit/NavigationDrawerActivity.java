@@ -77,12 +77,12 @@ public class NavigationDrawerActivity extends AppCompatActivity
 //            mMyMusicFragment = (MyMusicFragment) getSupportFragmentManager().getFragment(savedInstanceState, MY_MUSIC_STATE_KEY);
             if (mMyMusicFragment == null) {
                 mMyMusicFragment = new MyMusicFragment();
-                mMyMusicFragmentState = (Fragment.SavedState) savedInstanceState.getParcelable(MY_MUSIC_STATE_KEY);
+                mMyMusicFragmentState = savedInstanceState.getParcelable(MY_MUSIC_STATE_KEY);
                 mMyMusicFragment.setInitialSavedState(mMyMusicFragmentState);
             }
             if (mSoundCloudFragment == null) {
                 mSoundCloudFragment = new SoundCloudFragment();
-                mSoundCloudFragmentState = (Fragment.SavedState) savedInstanceState.getParcelable(SOUNDCLOUD_STATE_KEY);
+                mSoundCloudFragmentState = savedInstanceState.getParcelable(SOUNDCLOUD_STATE_KEY);
                 mSoundCloudFragment.setInitialSavedState(mSoundCloudFragmentState);
             }
             setTitle(savedInstanceState.getString(TITLE_STATE_KEY));
@@ -172,7 +172,7 @@ public class NavigationDrawerActivity extends AppCompatActivity
                 return;
             View header = mNavigationView.getHeaderView(0);
             ((TextView)header.findViewById(R.id.user_email)).setText("");
-            ((TextView)header.findViewById(R.id.user_name)).setText("Biisit User");
+            ((TextView)header.findViewById(R.id.user_name)).setText(R.string.logged_out_user_display_name);
             MenuItem signInOutMenuItem = mNavigationView.getMenu().findItem(R.id.sign_in_out);
             signInOutMenuItem.setTitle("Sign In");
         }

@@ -10,7 +10,8 @@
     android:paddingLeft="16dp"
     android:paddingRight="16dp"
     android:gravity="center_vertical"
-    >
+    android:paddingStart="16dp"
+    android:paddingEnd="16dp">
     <!--android:duplicateParentState="false"-->
     <!--android:background="@drawable/list_item_selector"-->
 
@@ -19,7 +20,8 @@
         android:layout_height="wrap_content"
         android:id="@+id/button"
         app:srcCompat="@drawable/ic_play"
-        android:src="@drawable/ic_play"/>
+        android:src="@drawable/ic_play"
+        android:contentDescription="@string/tap_to_play_message"/>
 
     <TextView
         android:id="@+id/music_id"

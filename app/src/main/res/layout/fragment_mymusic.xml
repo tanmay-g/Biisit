@@ -17,19 +17,15 @@
         android:visibility="gone"/>
 
     <android.support.v7.widget.RecyclerView
-        xmlns:android="http://schemas.android.com/apk/res/android"
-        xmlns:app="http://schemas.android.com/apk/res-auto"
-        xmlns:tools="http://schemas.android.com/tools"
         android:id="@+id/recyclerView"
-        android:name="com.tanmay.biisit.MyMusicFragment"
+        android:clipToPadding="false"
+        android:paddingBottom="80dp"
         android:layout_width="match_parent"
         android:layout_height="match_parent"
-        app:layoutManager="LinearLayoutManager"
         app:layout_behavior="@string/appbar_scrolling_view_behavior"
         tools:context="com.tanmay.biisit.myMusic.MyMusicFragment"
         tools:listitem="@layout/fragment_mymusic_list_item"
         />
-        <!--android:background="@color/colorAccent"-->
 
     <android.support.design.widget.AppBarLayout
         android:layout_width="match_parent"

@@ -61,6 +61,7 @@ class SoundCloudRecyclerViewAdapter extends RecyclerView.Adapter<SoundCloudRecyc
             holder.mView.setSelected(true);
             mSelectedView = holder.mView;
             holder.mButton.setImageResource(R.drawable.ic_pause);
+            holder.mButton.setContentDescription(mContext.getString(R.string.tap_to_pause_message));
         }
         else
             holder.mView.setSelected(false);
@@ -89,7 +90,9 @@ class SoundCloudRecyclerViewAdapter extends RecyclerView.Adapter<SoundCloudRecyc
     private void unSelectSelectedView(){
         if (mSelectedView != null) {
             mSelectedView.setSelected(false);
-            ((ImageView)mSelectedView.findViewById(R.id.button)).setImageResource(R.drawable.ic_play);
+            ImageView button = (ImageView)mSelectedView.findViewById(R.id.button);
+            button.setImageResource(R.drawable.ic_play);
+            button.setContentDescription(mContext.getString(R.string.tap_to_play_message));
         }
         mSelectedPosition = -1;
     }
@@ -134,6 +137,9 @@ class SoundCloudRecyclerViewAdapter extends RecyclerView.Adapter<SoundCloudRecyc
                 mView.setSelected(!isAlreadyRunning);
                 mButton.setImageResource(
                         !isAlreadyRunning ? R.drawable.ic_pause : R.drawable.ic_play
+                );
+                mButton.setContentDescription(
+                        !isAlreadyRunning ? mContext.getString(R.string.tap_to_pause_message) : mContext.getString(R.string.tap_to_play_message)
                 );
 //                Uri mediaUri= Uri.parse(mValues.get(adapterPosition).getStreamURL());
 //                    Log.i(LOG_TAG, "onClick: telling fragment about click at " + adapterPosition);

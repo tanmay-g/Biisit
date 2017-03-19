@@ -35,9 +35,10 @@ dependencies {
     compile 'com.google.firebase:firebase-database:10.2.0'
     compile 'com.google.firebase:firebase-auth:10.2.0'
     compile 'com.firebaseui:firebase-ui-auth:1.2.0'
-//    compile 'com.google.code.gson:gson:2.8.0'
-//    compile 'com.squareup.retrofit2:retrofit:2.1.0'
-//    compile 'com.squareup.retrofit2:converter-gson:2.1.0'
+    compile 'com.google.code.gson:gson:2.8.0'
+    compile 'com.squareup.retrofit2:retrofit:2.1.0'
+    compile 'com.squareup.retrofit2:converter-gson:2.1.0'
+    compile 'com.squareup.picasso:picasso:2.5.2'
 }
 
 

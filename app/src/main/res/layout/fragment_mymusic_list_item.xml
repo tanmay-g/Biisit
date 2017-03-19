@@ -3,33 +3,40 @@
     xmlns:android="http://schemas.android.com/apk/res/android"
     xmlns:app="http://schemas.android.com/apk/res-auto"
     xmlns:tools="http://schemas.android.com/tools"
+    android:id="@+id/list_item"
     android:layout_width="match_parent"
     android:layout_height="wrap_content"
+    android:background="@drawable/list_item_selector"
+    android:clickable="true"
+    android:duplicateParentState="false"
+    android:focusable="true"
+    android:gravity="center_vertical"
+    android:importantForAccessibility="yes"
+    android:nextFocusRight="@+id/checkBox"
     android:orientation="horizontal"
     android:paddingLeft="16dp"
     android:paddingRight="16dp"
-    android:gravity="center_vertical"
-    android:clickable="true"
-    android:background="@drawable/list_item_selector"
-    android:duplicateParentState="false">
+    android:paddingEnd="16dp"
+    android:paddingStart="16dp">
 
     <ImageView
+        android:id="@+id/button"
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
-        android:id="@+id/button"
         android:clickable="false"
+        android:src="@drawable/ic_play"
         app:srcCompat="@drawable/ic_play"
-        android:src="@drawable/ic_play"/>
+        android:contentDescription="@string/tap_to_play_message"/>
 
     <TextView
         android:id="@+id/music_id"
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
         android:layout_margin="@dimen/text_margin"
-        android:textAppearance="?attr/textAppearanceListItem"
         android:layout_weight="0"
-        tools:text="1"
         android:clickable="false"
+        android:textAppearance="?attr/textAppearanceListItem"
+        tools:text="1"
         />
 
     <LinearLayout
@@ -44,8 +51,8 @@
             android:id="@+id/music_title"
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
-            android:layout_marginTop="@dimen/text_margin_small"
             android:layout_marginStart="@dimen/text_margin"
+            android:layout_marginTop="@dimen/text_margin_small"
             android:textAppearance="?attr/textAppearanceListItem"
 
             tools:text="Item 1"/>
@@ -54,19 +61,20 @@
             android:id="@+id/music_artist"
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
-            android:layout_marginStart="@dimen/text_margin"
             android:layout_marginBottom="@dimen/text_margin_small"
+            android:layout_marginStart="@dimen/text_margin"
             android:textAppearance="@style/TextAppearance.AppCompat.Small"
             tools:text="Name 1"/>
 
     </LinearLayout>
 
     <CheckBox
+        android:id="@+id/checkBox"
+        style="?android:starStyle"
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
-        android:id="@+id/checkBox"
-        style="@android:style/Widget.Material.Light.CompoundButton.Star"
-        android:duplicateParentState="false"/>
+        android:duplicateParentState="false"
+        android:nextFocusLeft="@id/list_item"/>
 
 
 </LinearLayout>

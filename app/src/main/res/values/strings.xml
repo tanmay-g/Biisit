@@ -17,6 +17,15 @@
     </string-array>
     <string name="appwidget_text">EXAMPLE</string>
     <string name="add_widget">Add widget</string>
+    <string name="logged_out_user_display_name">Biisit User</string>
+    <string name="my_music_title">My Music</string>
+    <string name="soundcloud_title">SoundCloud</string>
+    <string name="account_section_subheader">Account</string>
+    <string name="sign_in_title">Sign In</string>
+    <string name="My_music_emptyview_text">No Music on device!</string>
+    <string name="biisit_logo_label">Biisit Logo</string>
+    <string name="tap_to_play_message">Tap to Play</string>
+    <string name="tap_to_pause_message">Tap to Pause</string>
     <!--<string-array name="sort_spinner_choice_values">-->
     <!--<item>all</item>-->
     <!--<item>only_fav</item>-->

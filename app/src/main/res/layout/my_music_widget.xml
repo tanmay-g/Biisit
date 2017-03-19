@@ -11,7 +11,7 @@
         android:orientation="horizontal"
         android:layout_width="match_parent"
         android:layout_height="@dimen/abc_action_bar_default_height_material"
-        android:background="@color/colorPrimary"
+        android:background="@color/color_primary"
         android:gravity="center_vertical">
         <ImageView
             android:layout_width="wrap_content"
@@ -23,7 +23,7 @@
         <TextView
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
-            android:text="My Music"
+            android:text="@string/my_music_title"
             android:textColor="@color/white"
             android:textAppearance="@style/TextAppearance.Widget.AppCompat.Toolbar.Title"/>
     </LinearLayout>
@@ -46,7 +46,7 @@
             android:gravity="center"
             android:fontFamily="sans-serif-condensed"
             android:textAppearance="?android:textAppearanceLarge"
-            android:text="No Music on device!"
+            android:text="@string/My_music_emptyview_text"
             android:visibility="gone"/>
     </FrameLayout>
 
