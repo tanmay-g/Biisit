@@ -100,7 +100,7 @@ public class NavigationDrawerActivity extends AppCompatActivity
             // Should we show an explanation?
             if (ActivityCompat.shouldShowRequestPermissionRationale(this,
                     Manifest.permission.READ_EXTERNAL_STORAGE)) {
-                showSnackbar("Cannot read local music without permission");
+                showSnackbar(getString(R.string.permission_explanation_snackbar_message));
                 // Show an explanation to the user *asynchronously* -- don't block
                 // this thread waiting for the user's response! After the user
                 // sees the explanation, try again to request the permission.
@@ -165,7 +165,7 @@ public class NavigationDrawerActivity extends AppCompatActivity
             ((TextView)header.findViewById(R.id.user_email)).setText(email);
             ((TextView)header.findViewById(R.id.user_name)).setText(name);
             MenuItem signInOutMenuItem = mNavigationView.getMenu().findItem(R.id.sign_in_out);
-            signInOutMenuItem.setTitle("Sign Out");
+            signInOutMenuItem.setTitle(R.string.sign_out_title);
         }
         else {
             if (mNavigationView == null)
@@ -174,7 +174,7 @@ public class NavigationDrawerActivity extends AppCompatActivity
             ((TextView)header.findViewById(R.id.user_email)).setText("");
             ((TextView)header.findViewById(R.id.user_name)).setText(R.string.logged_out_user_display_name);
             MenuItem signInOutMenuItem = mNavigationView.getMenu().findItem(R.id.sign_in_out);
-            signInOutMenuItem.setTitle("Sign In");
+            signInOutMenuItem.setTitle(R.string.sign_in_title);
         }
     }
 
@@ -229,7 +229,7 @@ public class NavigationDrawerActivity extends AppCompatActivity
                             @Override
                             public void onComplete(@NonNull Task<Void> task) {
                                 MenuItem signInOutMenuItem = mNavigationView.getMenu().findItem(R.id.sign_in_out);
-                                signInOutMenuItem.setTitle("Sign In");
+                                signInOutMenuItem.setTitle(getString(R.string.sign_in_title));
                                 updateUserDisplay();
                             }
                         });
@@ -270,7 +270,7 @@ public class NavigationDrawerActivity extends AppCompatActivity
             return;
         }
 
-        showSnackbar("Unexpected response from Sign-in");
+        showSnackbar(getString(R.string.sign_in_snackbar_unexpected_response));
     }
 
     @MainThread
@@ -285,22 +285,22 @@ public class NavigationDrawerActivity extends AppCompatActivity
             // Sign in failed
             if (response == null) {
                 // User pressed back button
-                showSnackbar("Sign in was cancelled");
+                showSnackbar(getString(R.string.sign_in_snackbar_cancelled));
                 return;
             }
 
             if (response.getErrorCode() == ErrorCodes.NO_NETWORK) {
-                showSnackbar("Unable to sign in. Please check internet connection.");
+                showSnackbar(getString(R.string.sign_in_snackbar_network_error));
                 return;
             }
 
             if (response.getErrorCode() == ErrorCodes.UNKNOWN_ERROR) {
-                showSnackbar("Error while signing in");
+                showSnackbar(getString(R.string.sign_in_snackbar_generic_error));
                 return;
             }
         }
 
-        showSnackbar("Unexpected response from Sign-in");
+        showSnackbar(getString(R.string.sign_in_snackbar_unexpected_response));
     }
 
     @MainThread

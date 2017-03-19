@@ -172,9 +172,9 @@ class MyMusicRecyclerViewAdapter extends RecyclerView.Adapter<MyMusicRecyclerVie
         }
         else {
 //            Log.i(LOG_TAG, "onBindViewHolder: setting not selected");
-//            holder.mButton.setImageResource(R.drawable.ic_play);
+            holder.mButton.setImageResource(R.drawable.ic_play);
             holder.mView.setSelected(false);
-//            holder.mButton.setContentDescription(mContext.getString(R.string.tap_to_play_message));
+            holder.mButton.setContentDescription(mContext.getString(R.string.tap_to_play_message));
         }
 
         if (mIsLoggedIn) {

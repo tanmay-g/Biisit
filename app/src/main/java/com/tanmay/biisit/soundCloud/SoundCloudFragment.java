@@ -234,7 +234,7 @@ public class SoundCloudFragment extends Fragment
         mProgressDialog = new ProgressDialog(getActivity());
         mProgressDialog.setIndeterminate(true);
         mProgressDialog.setProgressStyle(ProgressDialog.STYLE_SPINNER);
-        mProgressDialog.setMessage("Fetching...");
+        mProgressDialog.setMessage(getString(R.string.progress_dialog_fetching_message));
         mProgressDialog.setCanceledOnTouchOutside(false);
 
         mController = new CustomMediaController(getActivity(), true);
@@ -260,18 +260,17 @@ public class SoundCloudFragment extends Fragment
 //            }
 //            respondToSpinnerValueChanage();
         }
-        else if (MediaPlayerService.sCurrentClient == SOUNDCLOUD_FRAGMENT_CLIENT_ID){
-            if (MediaPlayerService.sIsPlaying)
-                mStopPlayOnNextPause = true;
-            else
-                sendServiceBroadcast(SERVICE_ACTION_STOP);
-        }
-//        else
         if (mSearchResults != null){
             if (mSearchResults.isEmpty())
                 showEmptyView();
             else
                 displayResults();
+        }
+        else if (savedInstanceState == null && MediaPlayerService.sCurrentClient == SOUNDCLOUD_FRAGMENT_CLIENT_ID){
+            if (MediaPlayerService.sIsPlaying)
+                mStopPlayOnNextPause = true;
+            else
+                sendServiceBroadcast(SERVICE_ACTION_STOP);
         }
 
         mSpinner = (Spinner) view.findViewById(R.id.search_type_spinner);

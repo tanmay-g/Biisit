@@ -63,9 +63,11 @@ class SoundCloudRecyclerViewAdapter extends RecyclerView.Adapter<SoundCloudRecyc
             holder.mButton.setImageResource(R.drawable.ic_pause);
             holder.mButton.setContentDescription(mContext.getString(R.string.tap_to_pause_message));
         }
-        else
+        else {
+            holder.mButton.setImageResource(R.drawable.ic_play);
             holder.mView.setSelected(false);
-
+            holder.mButton.setContentDescription(mContext.getString(R.string.tap_to_play_message));
+        }
 
     }
 

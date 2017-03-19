@@ -41,6 +41,7 @@
             android:layout_height="match_parent"
             android:clipToPadding="false"
             android:paddingBottom="80dp"
+            android:background="@color/white"
             app:layout_behavior="@string/appbar_scrolling_view_behavior"
             tools:context="com.tanmay.biisit.soundCloud.SoundCloudFragment"
             tools:listitem="@layout/fragment_soundcloud_list_item"/>
@@ -50,6 +51,7 @@
             android:layout_height="match_parent"
             android:id="@+id/empty_view"
             android:text="@string/soundcloud_emptyview_text_nosearch"
+            android:background="@color/white"
             android:visibility="visible"
             android:gravity="center"
             app:layout_anchor="@id/swipe_refresh_layout"/>

@@ -30,6 +30,13 @@
     <string name="biisit_logo_label">Biisit Logo</string>
     <string name="tap_to_play_message">Tap to Play</string>
     <string name="tap_to_pause_message">Tap to Pause</string>
+    <string name="sign_out_title">Sign Out</string>
+    <string name="progress_dialog_fetching_message">Fetching...</string>
+    <string name="permission_explanation_snackbar_message">Cannot read local music without permission</string>
+    <string name="sign_in_snackbar_unexpected_response">Unexpected response from Sign-in</string>
+    <string name="sign_in_snackbar_cancelled">Sign in was cancelled</string>
+    <string name="sign_in_snackbar_network_error">Unable to sign in. Please check internet connection.</string>
+    <string name="sign_in_snackbar_generic_error">Error while signing in</string>
     <!--<string-array name="sort_spinner_choice_values">-->
     <!--<item>all</item>-->
     <!--<item>only_fav</item>-->
