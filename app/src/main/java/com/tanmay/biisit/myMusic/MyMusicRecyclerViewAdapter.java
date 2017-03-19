@@ -25,6 +25,7 @@ import com.tanmay.biisit.R;
 
 import java.util.Arrays;
 
+import static com.tanmay.biisit.NavigationDrawerActivity.getTimeString;
 import static com.tanmay.biisit.R.id.checkBox;
 
 
@@ -41,6 +42,7 @@ class MyMusicRecyclerViewAdapter extends RecyclerView.Adapter<MyMusicRecyclerVie
     private final int mTitleColumn;
     private final int mIdColumn;
     private final int mArtistColumn;
+    private final int mDurationColumn;
     private final OnListFragmentInteractionListener mListener;
     private boolean mOnlyFav;
     private int mSelectedPosition = -1;
@@ -88,6 +90,8 @@ class MyMusicRecyclerViewAdapter extends RecyclerView.Adapter<MyMusicRecyclerVie
                     (MediaStore.Audio.Media._ID);
             mArtistColumn = mValues.getColumnIndex
                     (MediaStore.Audio.Media.ARTIST);
+            mDurationColumn = mValues.getColumnIndex
+                    (MediaStore.Audio.Media.DURATION);
             mExternalPositions = new int[mValues.getCount()];
             Arrays.fill(mExternalPositions, -1);
         }
@@ -95,6 +99,7 @@ class MyMusicRecyclerViewAdapter extends RecyclerView.Adapter<MyMusicRecyclerVie
             mTitleColumn = 0;
             mIdColumn = 0;
             mArtistColumn = 0;
+            mDurationColumn = 0;
             return;
         }
 
@@ -147,19 +152,21 @@ class MyMusicRecyclerViewAdapter extends RecyclerView.Adapter<MyMusicRecyclerVie
     }
 
 
+
     @Override
     public void onBindViewHolder(final ViewHolder holder, final int position) {
 //        holder.mItem = mValues.moveToPosition(position);
 
         mValues.moveToPosition(position);
-        holder.mIdView.setText(
-                String.valueOf((int) mValues.getLong(mIdColumn))
-        );
+        holder.mID = String.valueOf((int) mValues.getLong(mIdColumn));
         holder.mTitleView.setText(
                 mValues.getString(mTitleColumn)
         );
         holder.mArtistView.setText(
                 mValues.getString(mArtistColumn)
+        );
+        holder.mDurationView.setText(
+                getTimeString(mValues.getLong(mDurationColumn))
         );
 
 //        Log.i(LOG_TAG, "onBindViewHolder: position: " + position + ", mSelectedPosition: "+mSelectedPosition+", mExternalPositions[position]: "+mExternalPositions[position]+", mSelectedExternalPosition:" + mSelectedExternalPosition);
@@ -247,11 +254,12 @@ class MyMusicRecyclerViewAdapter extends RecyclerView.Adapter<MyMusicRecyclerVie
 
     class ViewHolder extends RecyclerView.ViewHolder {
         final View mView;
-        final TextView mIdView;
         final TextView mTitleView;
         final TextView mArtistView;
+        final TextView mDurationView;
         final ImageView mButton;
         final CheckBox mStar;
+        String mID;
 
         private final View.OnClickListener mainListener = new View.OnClickListener() {
             @Override
@@ -303,9 +311,9 @@ class MyMusicRecyclerViewAdapter extends RecyclerView.Adapter<MyMusicRecyclerVie
                 boolean isChecked = checkBox.isChecked();
 //                Log.i(LOG_TAG, "onClickStar: Set to " + isChecked + " for the star at " + getAdapterPosition());
                 if (isChecked)
-                    mSpecificUserDataReference.child((String) mIdView.getText()).setValue(getAdapterPosition());
+                    mSpecificUserDataReference.child(mID).setValue(getAdapterPosition());
                 else
-                    mSpecificUserDataReference.child((String) mIdView.getText()).setValue(null);
+                    mSpecificUserDataReference.child(mID).setValue(null);
 
             }
         };
@@ -313,7 +321,7 @@ class MyMusicRecyclerViewAdapter extends RecyclerView.Adapter<MyMusicRecyclerVie
         ViewHolder(View view) {
             super(view);
             mView = view;
-            mIdView = (TextView) view.findViewById(R.id.music_id);
+            mDurationView = (TextView) view.findViewById(R.id.music_duration);
             mTitleView = (TextView) view.findViewById(R.id.music_title);
             mArtistView = (TextView) view.findViewById(R.id.music_artist);
             mButton = (ImageView) view.findViewById(R.id.button);

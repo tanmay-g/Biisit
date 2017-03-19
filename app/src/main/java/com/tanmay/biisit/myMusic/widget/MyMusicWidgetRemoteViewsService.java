@@ -16,6 +16,7 @@ import static com.tanmay.biisit.MediaPlayerService.BROADCAST_CLIENT_ITEM_POS_KEY
 import static com.tanmay.biisit.MediaPlayerService.BROADCAST_MEDIA_URI_KEY;
 import static com.tanmay.biisit.MediaPlayerService.SERVICE_ACTION_PAUSE;
 import static com.tanmay.biisit.MediaPlayerService.SERVICE_ACTION_START_PLAY;
+import static com.tanmay.biisit.NavigationDrawerActivity.getTimeString;
 import static com.tanmay.biisit.myMusic.MyMusicFragment.MY_MUSIC_FRAGMENT_CLIENT_ID;
 
 public class MyMusicWidgetRemoteViewsService extends RemoteViewsService {
@@ -30,6 +31,7 @@ public class MyMusicWidgetRemoteViewsService extends RemoteViewsService {
             private final String LOG_TAG = "RemoteViewsFactory";
             int mArtistColumn;
             int mIdColumn;
+            int mDurationColumn;
             int mTitleColumn;
             private Cursor data = null;
 
@@ -53,6 +55,8 @@ public class MyMusicWidgetRemoteViewsService extends RemoteViewsService {
                             (MediaStore.Audio.Media.TITLE);
                     mIdColumn = data.getColumnIndex
                             (MediaStore.Audio.Media._ID);
+                    mDurationColumn = data.getColumnIndex
+                            (MediaStore.Audio.Media.DURATION);
                     mArtistColumn = data.getColumnIndex
                             (MediaStore.Audio.Media.ARTIST);
                 }
@@ -83,8 +87,8 @@ public class MyMusicWidgetRemoteViewsService extends RemoteViewsService {
                 RemoteViews views = new RemoteViews(getPackageName(),
                         R.layout.my_music_widget_list_item);
                 views.setTextViewText(
-                        R.id.music_id,
-                        String.valueOf((int) data.getLong(mIdColumn))
+                        R.id.music_duration,
+                        getTimeString(data.getLong(mDurationColumn))
                 );
                 views.setTextViewText(
                         R.id.music_artist,

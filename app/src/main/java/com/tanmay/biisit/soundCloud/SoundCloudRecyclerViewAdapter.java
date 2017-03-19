@@ -13,6 +13,8 @@ import com.tanmay.biisit.soundCloud.pojo.Track;
 
 import java.util.List;
 
+import static com.tanmay.biisit.NavigationDrawerActivity.getTimeString;
+
 
 /**
  * {@link RecyclerView.Adapter} that can display a song from a cursor and makes a call to the
@@ -47,8 +49,8 @@ class SoundCloudRecyclerViewAdapter extends RecyclerView.Adapter<SoundCloudRecyc
 //        holder.mItem = mValues.moveToPosition(position);
 
         Track selectedTrack = mValues.get(position);
-        holder.mIdView.setText(
-                String.valueOf(position)
+        holder.mDurationView.setText(
+                getTimeString(selectedTrack.getDuration())
         );
         holder.mTitleView.setText(
                 selectedTrack.getTitle()
@@ -116,11 +118,10 @@ class SoundCloudRecyclerViewAdapter extends RecyclerView.Adapter<SoundCloudRecyc
 
     class ViewHolder extends RecyclerView.ViewHolder {
         final View mView;
-        final TextView mIdView;
         final TextView mTitleView;
         final TextView mArtistView;
         final ImageView mButton;
-
+        final TextView mDurationView;
         private final View.OnClickListener mainListener = new View.OnClickListener() {
             @Override
             public void onClick(View v) {
@@ -153,9 +154,9 @@ class SoundCloudRecyclerViewAdapter extends RecyclerView.Adapter<SoundCloudRecyc
        ViewHolder(View view) {
             super(view);
             mView = view;
-            mIdView = (TextView) view.findViewById(R.id.music_id);
             mTitleView = (TextView) view.findViewById(R.id.music_title);
             mArtistView = (TextView) view.findViewById(R.id.music_artist);
+            mDurationView = (TextView) view.findViewById(R.id.music_duration);
             mButton = (ImageView) view.findViewById(R.id.button);
             mView.setOnClickListener(mainListener);
         }

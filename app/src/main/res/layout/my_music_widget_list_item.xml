@@ -11,9 +11,9 @@
     android:paddingRight="16dp"
     android:gravity="center_vertical"
     android:paddingStart="16dp"
+    android:background="@drawable/list_item_selector"
     android:paddingEnd="16dp">
     <!--android:duplicateParentState="false"-->
-    <!--android:background="@drawable/list_item_selector"-->
 
     <ImageView
         android:layout_width="wrap_content"
@@ -23,19 +23,8 @@
         android:src="@drawable/ic_play"
         android:contentDescription="@string/tap_to_play_message"/>
 
-    <TextView
-        android:id="@+id/music_id"
-        android:layout_width="wrap_content"
-        android:layout_height="wrap_content"
-        android:layout_margin="@dimen/text_margin"
-        android:textAppearance="@style/TextAppearance.AppCompat.Body1"
-        android:textColor="@color/black"
-        android:layout_weight="0"
-        tools:text="1"
-        />
-
     <LinearLayout
-        android:layout_width="wrap_content"
+        android:layout_width="0dp"
         android:layout_height="wrap_content"
 
         android:layout_weight="1"
@@ -63,5 +52,15 @@
             tools:text="Name 1"/>
 
     </LinearLayout>
+    <TextView
+        android:id="@+id/music_duration"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_margin="@dimen/text_margin"
+        android:clickable="false"
+        android:textAppearance="@style/TextAppearance.AppCompat.Small"
+        android:textColor="@color/secondary_text"
+        tools:text="3:04"
+        />
 
 </LinearLayout>

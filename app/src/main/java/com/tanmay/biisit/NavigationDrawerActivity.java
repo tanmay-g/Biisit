@@ -31,6 +31,9 @@ import com.google.firebase.auth.FirebaseUser;
 import com.tanmay.biisit.myMusic.MyMusicFragment;
 import com.tanmay.biisit.soundCloud.SoundCloudFragment;
 
+import java.util.Locale;
+import java.util.concurrent.TimeUnit;
+
 public class NavigationDrawerActivity extends AppCompatActivity
         implements NavigationView.OnNavigationItemSelectedListener {
 
@@ -306,5 +309,20 @@ public class NavigationDrawerActivity extends AppCompatActivity
     @MainThread
     public void showSnackbar(String errorMessageRes) {
         Snackbar.make(findViewById(R.id.drawer_layout), errorMessageRes, Snackbar.LENGTH_LONG).show();
+    }
+
+    public static String getTimeString(long timeInMS){
+        long h = TimeUnit.MILLISECONDS.toHours(timeInMS);
+        long m = TimeUnit.MILLISECONDS.toMinutes(timeInMS) % TimeUnit.HOURS.toMinutes(1);
+        long s = TimeUnit.MILLISECONDS.toSeconds(timeInMS) % TimeUnit.MINUTES.toSeconds(1);
+
+        String hms;
+        if (h != 0)
+            hms = String.format(Locale.getDefault(), "%d:%02d:%02d", h, m, s);
+        else if (m < 10)
+            hms = String.format(Locale.getDefault(), "%01d:%02d", m, s);
+        else
+            hms = String.format(Locale.getDefault(), "%02d:%02d", m, s);
+        return hms;
     }
 }

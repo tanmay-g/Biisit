@@ -38,6 +38,7 @@
             android:layout_height="match_parent"
             android:divider="@null"
             android:dividerHeight="0dp"
+            android:background="@color/white"
             tools:listitem="@layout/my_music_widget_list_item"/>
         <TextView
             android:id="@+id/widget_empty"
