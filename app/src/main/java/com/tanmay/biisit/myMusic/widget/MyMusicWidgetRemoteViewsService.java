@@ -49,7 +49,7 @@ public class MyMusicWidgetRemoteViewsService extends RemoteViewsService {
                 }
                 if (data != null)
                     data.close();
-                data = getContentResolver().query(android.provider.MediaStore.Audio.Media.EXTERNAL_CONTENT_URI, null, null, null, null);
+                data = getContentResolver().query(android.provider.MediaStore.Audio.Media.EXTERNAL_CONTENT_URI, null, MediaStore.Audio.Media.IS_MUSIC + " <> 0 ", null, null);
                 if (data != null) {
                     mTitleColumn = data.getColumnIndex
                             (MediaStore.Audio.Media.TITLE);

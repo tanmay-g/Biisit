@@ -23,7 +23,7 @@
     <string name="account_section_subheader">Account</string>
     <string name="sign_in_title">Sign In</string>
     <string name="my_music_emptyview_text">No Music on device!</string>
-    <string name="my_music_no_fav_emptyview_text">No favourites set!</string>
+    <string name="my_music_no_fav_emptyview_text">No favourites set!\nRemember, only signed in users can set favourites.</string>
     <string name="soundcloud_emptyview_text">No results for that search!\nTry something else.</string>
     <string name="soundcloud_emptyview_text_nosearch">Try a search to see results here!</string>
     <string name="soundcloud_emptyview_text_nonet">Couldn\'t fetch search results.\nPlease check the network connection and try again.</string>

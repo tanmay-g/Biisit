@@ -11,6 +11,7 @@ import android.media.MediaPlayer;
 import android.net.Uri;
 import android.os.Bundle;
 import android.os.IBinder;
+import android.provider.MediaStore;
 import android.support.annotation.NonNull;
 import android.support.v4.app.Fragment;
 import android.support.v4.app.LoaderManager;
@@ -431,10 +432,10 @@ public class MyMusicFragment extends Fragment
 //                Log.w(LOG_TAG, "onCreateLoader: " + mFavouriteIds.toString());
                 String whereStr = " _ID in (" + TextUtils.join(", ", Arrays.toString(mFavouriteIds.toArray()).split("[\\[\\]]")[1].split(", ")) + ")";
 //                Log.w(LOG_TAG, "onCreateLoader: " + whereStr);
-                return new CursorLoader(getActivity(), android.provider.MediaStore.Audio.Media.EXTERNAL_CONTENT_URI, null, whereStr, null, null);
+                return new CursorLoader(getActivity(), android.provider.MediaStore.Audio.Media.EXTERNAL_CONTENT_URI, null, whereStr + " AND " + MediaStore.Audio.Media.IS_MUSIC + " <> 0 ", null, null);
 
             case CURSOR_LOADER_ID_ALL:
-                return new CursorLoader(getActivity(), android.provider.MediaStore.Audio.Media.EXTERNAL_CONTENT_URI, null, null, null, null);
+                return new CursorLoader(getActivity(), android.provider.MediaStore.Audio.Media.EXTERNAL_CONTENT_URI, null, MediaStore.Audio.Media.IS_MUSIC + " <> 0 ", null, null);
 
             default:
                 return null;

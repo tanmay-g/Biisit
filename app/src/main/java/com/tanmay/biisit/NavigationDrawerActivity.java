@@ -61,7 +61,7 @@ public class NavigationDrawerActivity extends AppCompatActivity
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
-        checkPermission();
+//        checkPermission();
         setContentView(R.layout.activity_navigation_drawer);
 
         mNavigationView = (NavigationView) findViewById(R.id.nav_view);
@@ -71,7 +71,11 @@ public class NavigationDrawerActivity extends AppCompatActivity
 //            Log.i(LOG_TAG, "onCreate: null savedState");
             mMyMusicFragment = new MyMusicFragment();
             mSoundCloudFragment = new SoundCloudFragment();
-            onNavigationItemSelected(mNavigationView.getMenu().getItem(0));
+            if (ContextCompat.checkSelfPermission(this, Manifest.permission.READ_EXTERNAL_STORAGE) == PackageManager.PERMISSION_GRANTED) {
+                onNavigationItemSelected(mNavigationView.getMenu().getItem(0));
+            }
+            else
+                onNavigationItemSelected(mNavigationView.getMenu().getItem(1));
         }
         else {
 //            Log.i(LOG_TAG, "onCreate: Restoring from savedState");
@@ -149,10 +153,10 @@ public class NavigationDrawerActivity extends AppCompatActivity
 
     @Override
     protected void onSaveInstanceState(Bundle outState) {
-        super.onSaveInstanceState(outState);
         outState.putParcelable(MY_MUSIC_STATE_KEY, mMyMusicFragmentState);
         outState.putParcelable(SOUNDCLOUD_STATE_KEY, mSoundCloudFragmentState);
         outState.putString(TITLE_STATE_KEY, getTitle().toString());
+        super.onSaveInstanceState(outState);
     }
 
     private void updateUserDisplay(){
